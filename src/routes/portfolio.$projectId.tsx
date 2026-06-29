@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { getProject } from "@/data/projects";
+import { getProject, type Project } from "@/data/projects";
 import { useState } from "react";
 
 export const Route = createFileRoute("/portfolio/$projectId")({
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/portfolio/$projectId")({
 });
 
 function ProjectDetail() {
-  const project = Route.useLoaderData();
+  const project = Route.useLoaderData() as Project;
   const [status, setStatus] = useState(project.status);
   const [targetDate, setTargetDate] = useState(project.targetDate);
   const [update, setUpdate] = useState(project.executiveUpdate);
