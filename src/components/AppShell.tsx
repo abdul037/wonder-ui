@@ -1,0 +1,138 @@
+import { Link, useRouterState } from "@tanstack/react-router";
+import { useEffect, useState, type ReactNode } from "react";
+
+const navItems = [
+  { to: "/", icon: "dashboard", label: "Dashboard" },
+  { to: "/portfolio", icon: "folder_special", label: "Portfolio" },
+  { to: "/sprint-board", icon: "view_kanban", label: "Sprint Board" },
+  { to: "/roadmap", icon: "map", label: "Roadmap" },
+  { to: "/import", icon: "upload_file", label: "Import Data" },
+] as const;
+
+const utilityItems = [
+  { to: "/settings", icon: "settings", label: "Settings" },
+  { to: "/support", icon: "help", label: "Support" },
+] as const;
+
+function Icon({ name, className = "" }: { name: string; className?: string }) {
+  return <span className={`material-symbols-outlined ${className}`}>{name}</span>;
+}
+
+function Sidebar({ pathname }: { pathname: string }) {
+  const isActive = (to: string) =>
+    to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(to + "/");
+  return (
+    <aside className="hidden md:flex flex-col h-full py-6 px-4 gap-2 bg-surface-container-low border-r border-border-subtle w-64 shrink-0">
+      <Link to="/" className="flex items-center gap-3 px-2 mb-8">
+        <div className="w-10 h-10 bg-primary flex items-center justify-center rounded-lg shadow-lg">
+          <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 1" }}>
+            insights
+          </span>
+        </div>
+        <div>
+          <h1 className="text-lg font-black text-primary leading-tight">PMO Command</h1>
+          <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">Strategic Oversight</p>
+        </div>
+      </Link>
+      <nav className="flex-1 space-y-1">
+        {navItems.map((item) => {
+          const active = isActive(item.to);
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              className={`flex items-center gap-3 rounded-lg px-4 py-3 transition-all ${
+                active
+                  ? "bg-primary-fixed text-on-primary-fixed font-bold translate-x-1"
+                  : "text-on-surface-variant hover:bg-surface-container-high"
+              }`}
+            >
+              <Icon name={item.icon} />
+              <span className="text-sm">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+      <div className="mt-auto pt-6 border-t border-border-subtle space-y-1">
+        {utilityItems.map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
+            className="flex items-center gap-3 text-on-surface-variant px-4 py-2 hover:bg-surface-container-high transition-all rounded-lg"
+          >
+            <Icon name={item.icon} />
+            <span className="text-sm">{item.label}</span>
+          </Link>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+function TopBar() {
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+  }, [dark]);
+  return (
+    <header className="flex justify-between items-center w-full px-6 py-3 h-16 bg-surface-container-lowest border-b border-border-subtle sticky top-0 z-20">
+      <div className="flex items-center gap-6 flex-1">
+        <div className="relative w-full max-w-md">
+          <Icon
+            name="search"
+            className="!absolute left-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none"
+          />
+          <input
+            type="text"
+            placeholder="Search portfolio, stakeholders, or workstreams..."
+            className="w-full bg-surface-container-low border-none rounded-full pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary focus:bg-surface-card transition-all outline-none text-on-surface"
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-4">
+        <button className="hidden sm:flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 active:scale-95 transition-all shadow-md">
+          <Icon name="add" />
+          Add New Item
+        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setDark((d) => !d)}
+            className="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors"
+            aria-label="Toggle theme"
+          >
+            <Icon name={dark ? "light_mode" : "dark_mode"} />
+          </button>
+          <button className="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors relative">
+            <Icon name="notifications" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-status-critical rounded-full border-2 border-surface-card" />
+          </button>
+        </div>
+        <div className="h-8 w-px bg-border-subtle mx-1" />
+        <div className="flex items-center gap-3">
+          <div className="text-right hidden lg:block">
+            <p className="text-sm font-medium leading-none">Marcus Sterling</p>
+            <p className="text-[10px] text-on-surface-variant uppercase tracking-tight mt-1">Chief Project Officer</p>
+          </div>
+          <img
+            className="w-10 h-10 rounded-full border-2 border-surface-card shadow-sm object-cover"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDp4oSwEVQaiA7CyF-dBoZi39-DggAsgtsEC65vFKUlOtWS9S0_SPL_L8Gnco81c_axSi4oNuOJBVNaDuaHJFzbBs96gqn19z7wrJ6hUf72EYldXiqFeoZejH8SiTy5Om-1UZ73XbKeK9O5gqu1uFrYmGmK5vkep8WAsoRAHJPoVrjHHiCIQglSWPkmwTM3bVV41L5zMlHaLnXbC1fdBoEAI1cy-2N57fC-aVxh0-63wnHiqqeAW9zglMR9guT3leZvX99xDOUMdaG8"
+            alt="Marcus Sterling"
+          />
+        </div>
+      </div>
+    </header>
+  );
+}
+
+export function AppShell({ children }: { children: ReactNode }) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  return (
+    <div className="flex h-screen w-full bg-background text-on-surface overflow-hidden">
+      <Sidebar pathname={pathname} />
+      <main className="flex-1 flex flex-col min-w-0 bg-background overflow-hidden relative">
+        <TopBar />
+        <div className="flex-1 overflow-y-auto custom-scrollbar">{children}</div>
+      </main>
+    </div>
+  );
+}
