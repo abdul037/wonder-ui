@@ -2,6 +2,14 @@
 @source "../src";
 @import "tw-animate-css";
 
+/* Safelist: classes composed via template strings at runtime. */
+@source inline("{bg,text,border}-workstream-{ox,ex,au,dw}");
+@source inline("{bg,text,border}-workstream-{ox,ex,au,dw}/{5,10,20}");
+@source inline("{bg,text,border}-status-{critical,high,medium,low}");
+@source inline("{bg,text,border}-status-{critical,high,medium,low}/{5,10,20,30}");
+@source inline("{bg,text,border}-{primary,secondary}");
+@source inline("{bg,text,border}-{primary,secondary}/{5,10,20,30}");
+
 @custom-variant dark (&:is(.dark *));
 
 /*
