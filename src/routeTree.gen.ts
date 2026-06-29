@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SprintBoardRouteImport } from './routes/sprint-board'
+import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PortfolioProjectIdRouteImport } from './routes/portfolio.$projectId'
@@ -17,6 +18,11 @@ import { Route as PortfolioProjectIdRouteImport } from './routes/portfolio.$proj
 const SprintBoardRoute = SprintBoardRouteImport.update({
   id: '/sprint-board',
   path: '/sprint-board',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RoadmapRoute = RoadmapRouteImport.update({
+  id: '/roadmap',
+  path: '/roadmap',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PortfolioRoute = PortfolioRouteImport.update({
@@ -38,12 +44,14 @@ const PortfolioProjectIdRoute = PortfolioProjectIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/portfolio': typeof PortfolioRouteWithChildren
+  '/roadmap': typeof RoadmapRoute
   '/sprint-board': typeof SprintBoardRoute
   '/portfolio/$projectId': typeof PortfolioProjectIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/portfolio': typeof PortfolioRouteWithChildren
+  '/roadmap': typeof RoadmapRoute
   '/sprint-board': typeof SprintBoardRoute
   '/portfolio/$projectId': typeof PortfolioProjectIdRoute
 }
@@ -51,18 +59,30 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/portfolio': typeof PortfolioRouteWithChildren
+  '/roadmap': typeof RoadmapRoute
   '/sprint-board': typeof SprintBoardRoute
   '/portfolio/$projectId': typeof PortfolioProjectIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/portfolio' | '/sprint-board' | '/portfolio/$projectId'
+  fullPaths:
+    | '/'
+    | '/portfolio'
+    | '/roadmap'
+    | '/sprint-board'
+    | '/portfolio/$projectId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/portfolio' | '/sprint-board' | '/portfolio/$projectId'
+  to:
+    | '/'
+    | '/portfolio'
+    | '/roadmap'
+    | '/sprint-board'
+    | '/portfolio/$projectId'
   id:
     | '__root__'
     | '/'
     | '/portfolio'
+    | '/roadmap'
     | '/sprint-board'
     | '/portfolio/$projectId'
   fileRoutesById: FileRoutesById
@@ -70,6 +90,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PortfolioRoute: typeof PortfolioRouteWithChildren
+  RoadmapRoute: typeof RoadmapRoute
   SprintBoardRoute: typeof SprintBoardRoute
 }
 
@@ -80,6 +101,13 @@ declare module '@tanstack/react-router' {
       path: '/sprint-board'
       fullPath: '/sprint-board'
       preLoaderRoute: typeof SprintBoardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roadmap': {
+      id: '/roadmap'
+      path: '/roadmap'
+      fullPath: '/roadmap'
+      preLoaderRoute: typeof RoadmapRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/portfolio': {
@@ -121,6 +149,7 @@ const PortfolioRouteWithChildren = PortfolioRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PortfolioRoute: PortfolioRouteWithChildren,
+  RoadmapRoute: RoadmapRoute,
   SprintBoardRoute: SprintBoardRoute,
 }
 export const routeTree = rootRouteImport
