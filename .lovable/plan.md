@@ -1,48 +1,62 @@
-# Where the checklist stands
+## Phase 5 — Dashboard UI Polish & Workstream Clarity
 
-Completed in earlier phases:
-- Phase 1 — Rebrand to "Supply Chain Tech Hub" + expanded project/task data model with Task ID, Tech/Business Owners, "Currently With", Sprint flag, Enhancement Log, latest timestamped update; Portfolio page with Projects↔Tasks scope toggle, List/Grid views, search and workstream/status/sprint filters.
-- Phase 2 — Newsletter route (`/newsletter`) with KPI bento, featured updates, workstream digests, chronological feed; dashboard "Latest from SCM Tech Pulse" strip.
-- Phase 3 — Admin route (`/admin`) with tabs for Projects, Tasks, Enhancement Log, Newsletter (inline edit, add/remove, append log, compose update) wired with sonner toasts.
+### 1. Workstream naming (full names everywhere)
+Update the workstream registry in `src/data/projects.ts` so each code maps to its official long name:
+- **OX** — Operation Excellence
+- **DW** — Data Warehouse / PowerBI
+- **EX** — Employee Experience
+- **AU** — Asset Utilization
 
-Not yet done — what the 4 attached design files target:
+Cascade these names through the Dashboard, Portfolio, Sprint Board, Roadmap, Newsletter, and Admin pages (badges show short code, tooltips/labels show full name).
 
-| File | Screen | Current route | Gap vs mock |
-|---|---|---|---|
-| Design1 | Sprint Board (Kanban) | `/sprint-board` | Mock has 7 columns (Backlog, Prioritized, In Current Sprint, In Progress, Blocked, UAT, Done), board toolbar with sprint title + sprint switcher + filters, blocked column styled critical, card chips for workstream + tech stack + priority + due. Current build has 5 columns and lighter toolbar. |
-| Design2 | Executive Dashboard | `/` | Mock has 6-KPI surgical grid (142 / 84 / 32 / 7 critical / 12 high / 14d avg), workstream filter bar with portfolio distribution, asymmetric project grid (OX/DW/AU large cards + EX portfolio-wide card + Blockers side card), FAB. Current dashboard is simpler. |
-| Design3 | Data Import Wizard | `/import` | Mock has 3-step stepper, 2-col layout: upload dropzone + selected file mockup + data mapping rows + preview/validate table on the left; instructions card + summary card on the right; toast overlay. Current page is a thinner stepper-only version. |
-| Design4 | Newsletter — Strategic Impact Report | `/newsletter` | Mock has hero, 4-card Impact Stats bento, four workstream enhancement sections (OX/EX/AU/DW) in bento grid, Visual Velocity Impact custom chart block, footer. Current newsletter has a feed/digest layout, not the bento/per-workstream report layout. |
+### 2. Clarify the "Avg Progress" metric
+Today the dashboard shows "Avg Progress %" with no explanation. It is the **mean of each project's `progress` field within the selected workstream filter** (simple average, not weighted).
 
-# Phase 4 plan — bring the 4 screens up to the mocks
+Two improvements:
+- **Rename + tooltip**: relabel to "Avg Project Completion" with an info-icon tooltip explaining "Mean of progress across all projects in scope. Each project counted equally."
+- **Optional toggle**: small segmented control to switch between *Simple Avg* and *Weighted by # of actions* so executives can see both views.
 
-Scope: visual + structural realignment to match the attached HTML. Reuse existing data in `src/data/projects.ts` and `src/data/newsletter.ts`; no schema changes, no backend. Keep "Supply Chain Tech Hub" branding (replace "PMO Command Center" copy from the mocks).
+### 3. Dashboard UI enhancement (apply Design4 reference)
+Rework `src/routes/index.tsx` to match the strategic-report aesthetic from the shared design file:
 
-1. `src/routes/sprint-board.tsx`
-   - Expand to 7 columns matching mock order; "Blocked" header in `text-status-critical`.
-   - Add board toolbar: sprint title, sprint switcher select, workstream filter chips, search.
-   - Task card: workstream tag, priority pill, tech stack icon row, due date, assignee avatar, blocked reason on Blocked cards.
+```text
+┌──────────────────────────────────────────────────────────┐
+│ Hero strip: greeting + scope filter + last-refresh chip  │
+├──────────────────────────────────────────────────────────┤
+│ Bento KPI grid (6 tiles, asymmetric, large numerals)     │
+│  ┌──────────┬───────┬───────┐                            │
+│  │ Major    │ Open  │ Done  │                            │
+│  │ Projects │ Acts  │ Acts  │                            │
+│  ├──────────┼───────┼───────┤                            │
+│  │ In Prog  │ High  │ Block │                            │
+│  └──────────┴───────┴───────┘                            │
+├────────────────────────┬─────────────────────────────────┤
+│ Portfolio Health bar   │ Workstream Performance          │
+│ + status legend        │ (full names, progress rails,    │
+│                        │  delta vs last week)            │
+├────────────────────────┼─────────────────────────────────┤
+│ Live Actions Feed      │ Owner Workload leaderboard      │
+├────────────────────────┴─────────────────────────────────┤
+│ Critical Blockers panel (red rail, CTA to portfolio)     │
+├──────────────────────────────────────────────────────────┤
+│ Upcoming Milestones timeline | SCM Tech Pulse strip      │
+└──────────────────────────────────────────────────────────┘
+```
 
-2. `src/routes/index.tsx` (Executive Dashboard)
-   - Replace top section with the 6-KPI surgical grid (Total / Active / Sprint / Critical-red / High-orange / Avg cycle).
-   - Add Workstream Filter / Portfolio Distribution bar.
-   - Asymmetric project grid: 3 large workstream cards (OX, DW, AU) + wide EX portfolio-impact card + side "Roadblocker / Quick Actions" card.
-   - Keep the "Latest from SCM Tech Pulse" preview strip below.
-   - Add floating action button.
+Visual upgrades:
+- Workstream tiles get the **full name as title**, short code as chip, with a circular progress dial + sparkline-style delta.
+- KPI tiles use larger display numerals (JetBrains Mono), micro-trend arrows, and subtle gradient surfaces per status color.
+- Portfolio Health bar gets segment labels with counts on hover.
+- Live Actions Feed gets workstream rail color + status pill + relative time.
+- Critical Blockers card uses an accent border and "days blocked" badge.
+- Add a small "How metrics are computed" popover anchored at the top-right.
 
-3. `src/routes/import.tsx`
-   - 2-column layout: left = upload dropzone with selected-file mock + Data Mapping rows (source → target select) + Preview & Validate table with row-status pills.
-   - Right = Instructions card + Summary card.
-   - Keep 3-step stepper at top; add sonner toast for "Mapping saved".
+### 4. Files touched
+- `src/data/projects.ts` — add `workstreamFullName` map / update existing meta.
+- `src/routes/index.tsx` — restructure KPIs, add tooltip + toggle, polish panels.
+- `src/components/AppShell.tsx` — sidebar shows full workstream names.
+- `src/styles.css` — bento grid utilities, dial styles, tooltip token.
+- (Optional) small `WorkstreamBadge` component for consistent code+name rendering.
 
-4. `src/routes/newsletter.tsx`
-   - Rebuild as Strategic Impact Report: hero, 4-card Impact Stats bento, 2x2 workstream bento (OX/EX/AU/DW) with enhancement bullet lists from `newsletter.ts`, Visual Velocity Impact chart (CSS bars, no new lib), footer.
-
-## Technical notes
-
-- Pure presentational refactor of 4 route files; no new packages, no data-model changes.
-- Use existing tokens in `src/styles.css` (workstream-ox/ex/au/dw, status-critical/high/medium/low). Add a few utility classes if needed (bento spans, kanban column min-width already present).
-- Material Symbols font already loaded in `__root.tsx`.
-- Verify `bun run build:dev` after each route edit.
-
-Out of scope for this phase: persistence/Supabase, real file upload, real charts library, Admin page changes (already shipped).
+### Out of scope
+No data model or business-logic changes beyond the avg-progress toggle. Other routes only get the workstream rename pass.

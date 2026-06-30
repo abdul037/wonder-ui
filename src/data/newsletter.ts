@@ -109,7 +109,7 @@ export const updates: UpdateEntry[] = [
 
 export const workstreamDigest: Record<Workstream, { title: string; highlights: string[] }> = {
   OX: {
-    title: "Operational Excellence",
+    title: "Operation Excellence",
     highlights: [
       "Fero Auto-Plan telemetry schema v2 finalized",
       "Mid-mile dwell down 6% across SG/VN pilots",
@@ -117,7 +117,7 @@ export const workstreamDigest: Record<Workstream, { title: string; highlights: s
     ],
   },
   EX: {
-    title: "Executive Strategy",
+    title: "Employee Experience",
     highlights: [
       "Global expansion entity filings in motion",
       "Logistics pilot vendor shortlist circulating",
@@ -125,7 +125,7 @@ export const workstreamDigest: Record<Workstream, { title: string; highlights: s
     ],
   },
   AU: {
-    title: "Automation Unit",
+    title: "Asset Utilization",
     highlights: [
       "Driver App OCR benchmark complete — TFLite leads",
       "Lo-fi driver UX mocks circulated",
@@ -133,7 +133,7 @@ export const workstreamDigest: Record<Workstream, { title: string; highlights: s
     ],
   },
   DW: {
-    title: "Data Warehouse",
+    title: "Data Warehouse / PowerBI",
     highlights: [
       "Data Stream 2.0 canary consumers live in staging",
       "Bulk WeighScale UAT round 3 at 92% pass",

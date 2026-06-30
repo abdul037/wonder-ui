@@ -352,10 +352,17 @@ export const workstreamColors: Record<Workstream, string> = {
 };
 
 export const workstreamLabel: Record<Workstream, string> = {
-  OX: "Operational Excellence (OX)",
-  EX: "Executive Strategy (EX)",
-  AU: "Automation Unit (AU)",
-  DW: "Data Warehouse (DW)",
+  OX: "Operation Excellence (OX)",
+  EX: "Employee Experience (EX)",
+  AU: "Asset Utilization (AU)",
+  DW: "Data Warehouse / PowerBI (DW)",
+};
+
+export const workstreamFullName: Record<Workstream, string> = {
+  OX: "Operation Excellence",
+  EX: "Employee Experience",
+  AU: "Asset Utilization",
+  DW: "Data Warehouse / PowerBI",
 };
 
 export const priorityStyle: Record<Priority, { bg: string; text: string }> = {
