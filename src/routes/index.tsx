@@ -218,6 +218,7 @@ function Dashboard() {
       inSprint,
       activeSprints,
       statusCounts,
+      taskStatusCounts,
       byWorkstream,
       priorityCounts,
       owners,
