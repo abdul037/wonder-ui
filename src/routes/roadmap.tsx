@@ -1,6 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { projects, workstreamLabel } from "@/data/projects";
+import type { Project } from "@/data/projects";
+import { useIsAdmin } from "@/lib/admin";
+import { useDataVersion } from "@/lib/store";
+import { ProjectEditDialog } from "@/components/admin-edit/ProjectEditDialog";
 
 export const Route = createFileRoute("/roadmap")({
   head: () => ({
@@ -17,6 +22,9 @@ export const Route = createFileRoute("/roadmap")({
 const quarters = ["Q1 2026", "Q2 2026", "Q3 2026", "Q4 2026"];
 
 function Roadmap() {
+  const isAdmin = useIsAdmin();
+  useDataVersion();
+  const [editing, setEditing] = useState<Project | null>(null);
   const byWs = (["OX", "EX", "AU", "DW"] as const).map((ws) => ({
     ws,
     items: projects.filter((p) => p.workstream === ws),
@@ -78,8 +86,17 @@ function Roadmap() {
                   if (!item) return <div key={q} className="border-l border-border-subtle px-3 py-3" />;
                   return (
                     <div key={q} className="border-l border-border-subtle px-3 py-3">
-                      <div className={`rounded-lg p-3 bg-workstream-${w}/5 border border-workstream-${w}/20`}>
-                        <p className="text-xs font-bold text-on-surface">{item.name}</p>
+                      <div className={`relative rounded-lg p-3 bg-workstream-${w}/5 border border-workstream-${w}/20`}>
+                        {isAdmin && (
+                          <button
+                            onClick={() => setEditing(item)}
+                            title="Edit project"
+                            className="absolute top-1.5 right-1.5 text-primary bg-surface-card border border-border-subtle rounded p-0.5 hover:bg-primary/10"
+                          >
+                            <span className="material-symbols-outlined text-[12px]">edit</span>
+                          </button>
+                        )}
+                        <p className="text-xs font-bold text-on-surface pr-5">{item.name}</p>
                         <p className="text-[10px] text-on-surface-variant mt-1">{item.taskName}</p>
                         <div className="w-full h-1 bg-surface-container rounded-full overflow-hidden mt-2">
                           <div
@@ -114,6 +131,7 @@ function Roadmap() {
           })}
         </div>
       </div>
+      <ProjectEditDialog open={!!editing} onClose={() => setEditing(null)} project={editing} />
     </AppShell>
   );
 }

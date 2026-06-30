@@ -3,6 +3,7 @@ import { AppShell } from "@/components/AppShell";
 import { currentIssue, updates, workstreamDigest, type UpdateEntry } from "@/data/newsletter";
 import { projects, type Workstream } from "@/data/projects";
 import { relativeTime } from "@/lib/time";
+import { useDataVersion } from "@/lib/store";
 
 export const Route = createFileRoute("/newsletter")({
   head: () => ({
@@ -92,6 +93,7 @@ function UpdateCard({ u, large = false }: { u: UpdateEntry; large?: boolean }) {
 }
 
 function NewsletterPage() {
+  useDataVersion();
   const featured = updates.find((u) => u.featured) ?? updates[0];
   const rest = updates.filter((u) => u.id !== featured.id);
   const liveCount = projects.reduce((n, p) => n + p.enhancementLog.length, 0);

@@ -1,5 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
+import { setAdminMode, useIsAdmin } from "@/lib/admin";
 
 const navItems = [
   { to: "/", icon: "dashboard", label: "Dashboard" },
@@ -74,6 +75,7 @@ function Sidebar({ pathname }: { pathname: string }) {
 
 function TopBar() {
   const [dark, setDark] = useState(false);
+  const isAdmin = useIsAdmin();
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
@@ -93,9 +95,18 @@ function TopBar() {
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <button className="hidden sm:flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:opacity-90 active:scale-95 transition-all shadow-md">
-          <Icon name="add" />
-          Add New Item
+        <button
+          onClick={() => setAdminMode(!isAdmin)}
+          aria-pressed={isAdmin}
+          title={isAdmin ? "Admin mode is ON — click to disable" : "Enable admin mode to edit content inline"}
+          className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+            isAdmin
+              ? "bg-status-medium/10 text-status-medium border-status-medium/30 shadow-sm"
+              : "bg-surface-container-low text-on-surface-variant border-border-subtle hover:bg-surface-container"
+          }`}
+        >
+          <Icon name={isAdmin ? "lock_open" : "lock"} className="!text-[16px]" />
+          {isAdmin ? "Admin · ON" : "Admin mode"}
         </button>
         <div className="flex items-center gap-1">
           <button
