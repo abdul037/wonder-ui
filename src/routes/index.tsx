@@ -330,12 +330,12 @@ function Dashboard() {
                 <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
                   Workstream Performance
                 </p>
-                <p className="text-[10px] text-on-surface-variant">progress · open actions · blockers</p>
+                <p className="text-[10px] text-on-surface-variant">projects · actions · blockers</p>
               </div>
               <div className="space-y-4">
                 {metrics.byWorkstream.map((w) => (
-                  <div key={w.ws} className="flex items-center gap-4">
-                    <div className="w-56 shrink-0 flex items-center gap-2">
+                  <div key={w.ws} className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
                       <span
                         className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-workstream-${w.ws.toLowerCase()}/10 text-workstream-${w.ws.toLowerCase()}`}
                       >
@@ -348,13 +348,6 @@ function Dashboard() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex-1 h-2 bg-surface-container rounded-full overflow-hidden">
-                      <div
-                        className={`h-full bg-workstream-${w.ws.toLowerCase()}`}
-                        style={{ width: `${w.progress}%` }}
-                      />
-                    </div>
-                    <span className="text-xs font-mono text-on-surface w-10 text-right font-bold">{w.progress}%</span>
                     {w.blockers > 0 ? (
                       <span className="px-2 py-0.5 rounded-full bg-status-critical/10 text-status-critical text-[10px] font-bold whitespace-nowrap">
                         {w.blockers} blocked
