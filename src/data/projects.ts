@@ -20,6 +20,8 @@ export interface Person {
 export interface UpdateEntry {
   text: string;
   at: string; // ISO timestamp
+  author?: string;
+  kind?: "update" | "blocker" | "milestone" | "system";
 }
 
 export interface Task {
@@ -35,6 +37,7 @@ export interface Task {
   latestUpdate: UpdateEntry;
   priority?: Priority;
   boardColumn?: BoardColumn;
+  updates: UpdateEntry[];
 }
 
 export interface Project {
@@ -69,6 +72,7 @@ export interface Project {
   enhancementLog: { date: string; entry: string }[];
   latestUpdate: UpdateEntry;
   tasks: Task[];
+  updates: UpdateEntry[];
 }
 
 const avatars = [
