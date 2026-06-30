@@ -195,8 +195,6 @@ function Dashboard() {
     };
   }, [scoped, allTasks]);
 
-  const avgProgress = avgMode === "simple" ? metrics.avgProgressSimple : metrics.avgProgressWeighted;
-
   const upcoming = useMemo(() => {
     return scoped
       .flatMap((p) => p.timeline.filter((t) => !t.complete).map((t) => ({ p, t })))
