@@ -218,11 +218,12 @@ function TaskCard({ task, accent }: { task: Task; accent?: string }) {
 function SprintBoard() {
   return (
     <AppShell>
-      <section className="px-6 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-border-subtle bg-surface-card">
+      <section className="px-6 py-3 flex flex-wrap items-center justify-between gap-4 border-b border-border-subtle bg-surface-card">
         <div className="flex items-center gap-6">
           <div>
-            <h2 className="text-lg font-bold text-on-surface">Sprint 24: Core Infrastructure Q3</h2>
-            <p className="text-xs text-on-surface-variant">Sept 12 – Sept 26 • 14 days remaining</p>
+            <p className="eyebrow">Active Sprint</p>
+            <h2 className="section-title text-base mt-0.5">Sprint 24: Core Infrastructure Q3</h2>
+            <p className="text-[11px] text-on-surface-variant mt-0.5">Sept 12 – Sept 26 · 14 days remaining</p>
           </div>
           <div className="flex items-center -space-x-2">
             {[0, 1, 2].map((i) => (

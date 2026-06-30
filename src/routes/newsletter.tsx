@@ -65,9 +65,9 @@ function UpdateCard({ u, large = false }: { u: UpdateEntry; large?: boolean }) {
           )}
           <span className="text-[11px] text-on-surface-variant ml-auto">{relativeTime(u.publishedAt)}</span>
         </div>
-        <h3 className={`${large ? "text-2xl" : "text-lg"} font-black text-on-surface leading-tight`}>{u.title}</h3>
-        <p className="text-on-surface-variant text-sm">{u.summary}</p>
-        {large && <p className="text-on-surface-variant text-sm leading-relaxed">{u.body}</p>}
+        <h3 className={`${large ? "text-xl" : "text-sm"} font-semibold text-on-surface leading-snug tracking-tight`}>{u.title}</h3>
+        <p className="text-on-surface-variant text-xs">{u.summary}</p>
+        {large && <p className="text-on-surface-variant text-xs leading-relaxed">{u.body}</p>}
         <div className="flex items-center justify-between pt-2 border-t border-border-subtle">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center text-[10px] font-bold">
@@ -120,22 +120,22 @@ function NewsletterPage() {
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, white 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
           <div className="relative flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.3em] opacity-80">
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] opacity-80">
                 Issue #{currentIssue.number} · {formatDate(currentIssue.publishedAt)}
               </p>
-              <h1 className="text-5xl font-black leading-tight mt-2">{currentIssue.title}</h1>
-              <p className="mt-3 text-sm max-w-xl opacity-90">{currentIssue.intro}</p>
+              <h1 className="text-3xl font-bold leading-tight mt-2 tracking-tight">{currentIssue.title}</h1>
+              <p className="mt-2 text-xs max-w-xl opacity-90">{currentIssue.intro}</p>
             </div>
-            <div className="flex gap-3">
-              <button className="bg-white text-primary px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-white/90 transition-all flex items-center gap-2 shadow-lg">
-                <span className="material-symbols-outlined text-base">mail</span>
+            <div className="flex gap-2 flex-wrap">
+              <button className="flex-1 sm:flex-none bg-white text-primary px-4 py-2 rounded-lg text-xs font-bold hover:bg-white/90 transition-all flex items-center justify-center gap-2 shadow-lg">
+                <span className="material-symbols-outlined text-[18px]">mail</span>
                 Subscribe
               </button>
               <Link
                 to="/admin"
-                className="bg-white/10 backdrop-blur border border-white/30 text-white px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-white/20 transition-all flex items-center gap-2"
+                className="flex-1 sm:flex-none bg-white/10 backdrop-blur border border-white/30 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-white/20 transition-all flex items-center justify-center gap-2"
               >
-                <span className="material-symbols-outlined text-base">edit</span>
+                <span className="material-symbols-outlined text-[18px]">edit</span>
                 Submit Update
               </Link>
             </div>
@@ -143,32 +143,32 @@ function NewsletterPage() {
         </header>
 
         {/* KPI Bento */}
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {kpis.map((k) => (
-            <div key={k.label} className="bg-surface-card border border-border-subtle rounded-xl p-5 shadow-sm">
+            <div key={k.label} className="bg-surface-card border border-border-subtle rounded-xl p-4 shadow-sm">
               <div className="flex items-center justify-between">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">{k.label}</p>
-                <span className={`material-symbols-outlined text-${k.accent}`}>{k.icon}</span>
+                <p className="eyebrow">{k.label}</p>
+                <span className={`material-symbols-outlined text-[18px] text-${k.accent}`}>{k.icon}</span>
               </div>
-              <p className={`text-4xl font-black mt-3 text-${k.accent}`}>{k.value}</p>
+              <p className={`kpi-num mt-2 text-${k.accent}`}>{k.value}</p>
             </div>
           ))}
         </section>
 
         {/* Featured */}
         <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-primary">star</span>
-            <h2 className="text-xl font-bold text-on-surface">Featured Update</h2>
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[20px]">star</span>
+            <h2 className="section-title text-base">Featured Update</h2>
           </div>
           <UpdateCard u={featured} large />
         </section>
 
         {/* Workstream Digest */}
         <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-primary">hub</span>
-            <h2 className="text-xl font-bold text-on-surface">Workstream Digest</h2>
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[20px]">hub</span>
+            <h2 className="section-title text-base">Workstream Digest</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {(Object.keys(workstreamDigest) as Workstream[]).map((ws) => {
@@ -195,9 +195,9 @@ function NewsletterPage() {
 
         {/* Timeline feed */}
         <section className="space-y-4">
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-primary">schedule</span>
-            <h2 className="text-xl font-bold text-on-surface">Updates Feed</h2>
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-primary text-[20px]">schedule</span>
+            <h2 className="section-title text-base">Updates Feed</h2>
           </div>
           <div className="space-y-6">
             {Object.entries(groups).map(([day, items]) => (
@@ -214,12 +214,12 @@ function NewsletterPage() {
         </section>
 
         {/* Visual Velocity Impact */}
-        <section className="bg-surface-card border border-border-subtle rounded-2xl p-8 shadow-sm">
-          <div className="flex items-center gap-3 mb-1">
-            <span className="material-symbols-outlined text-primary">insights</span>
-            <h3 className="text-xl font-bold text-on-surface">Visual Velocity Impact</h3>
+        <section className="bg-surface-card border border-border-subtle rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="material-symbols-outlined text-primary text-[20px]">insights</span>
+            <h3 className="section-title text-base">Visual Velocity Impact</h3>
           </div>
-          <p className="text-sm text-on-surface-variant mb-6">
+          <p className="text-xs text-on-surface-variant mb-5">
             Enhancements shipped per workstream this issue cycle vs. the previous one.
           </p>
           <div className="grid grid-cols-4 gap-6 items-end h-48">
