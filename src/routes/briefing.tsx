@@ -493,9 +493,21 @@ function BriefingPage() {
   const notesOn = notes === "1";
 
   const go = (n: number) =>
-    navigate({ search: (s) => ({ ...s, slide: Math.min(Math.max(n, 1), total) }), replace: true });
+    navigate({
+      search: (s: { slide?: number; notes?: "0" | "1" }) => ({
+        ...s,
+        slide: Math.min(Math.max(n, 1), total),
+      }),
+      replace: true,
+    });
   const toggleNotes = () =>
-    navigate({ search: (s) => ({ ...s, notes: notesOn ? "0" : "1" }), replace: true });
+    navigate({
+      search: (s: { slide?: number; notes?: "0" | "1" }) => ({
+        ...s,
+        notes: notesOn ? "0" : "1",
+      }),
+      replace: true,
+    });
 
   useEffect(() => {
     document.title = `${current}/${total} · ${def.label} — SCM Briefing`;
