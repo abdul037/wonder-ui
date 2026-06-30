@@ -1,5 +1,14 @@
 import { useSyncExternalStore } from "react";
-import { projects, type Person, type Priority, type Project, type Status, type Task, type Workstream } from "@/data/projects";
+import {
+  projects,
+  type BoardColumn,
+  type Person,
+  type Priority,
+  type Project,
+  type Status,
+  type Task,
+  type Workstream,
+} from "@/data/projects";
 import { pipelineItems, type PipelineEffort, type PipelineItem, type PipelineSource, type PipelineStage } from "@/data/pipeline";
 import { updates, type UpdateEntry } from "@/data/newsletter";
 
@@ -136,6 +145,23 @@ export interface TaskDraft {
   techOwnerName: string;
   businessOwnerName: string;
   latestUpdateText: string;
+  priority?: Priority;
+  boardColumn?: BoardColumn;
+}
+
+export function taskToDraft(t: Task): TaskDraft {
+  return {
+    name: t.name,
+    status: t.status,
+    inSprint: t.inSprint,
+    sprint: t.sprint,
+    currentlyWithName: t.currentlyWith.name,
+    techOwnerName: t.techOwner.name,
+    businessOwnerName: t.businessOwner.name,
+    latestUpdateText: t.latestUpdate.text,
+    priority: t.priority ?? "Medium",
+    boardColumn: t.boardColumn,
+  };
 }
 
 export function applyTaskDraft(projectId: string, taskId: string, d: TaskDraft) {
@@ -150,6 +176,8 @@ export function applyTaskDraft(projectId: string, taskId: string, d: TaskDraft) 
   t.currentlyWith = toPerson(d.currentlyWithName);
   t.techOwner = toPerson(d.techOwnerName);
   t.businessOwner = toPerson(d.businessOwnerName);
+  if (d.priority) t.priority = d.priority;
+  t.boardColumn = d.boardColumn;
   if (d.latestUpdateText && d.latestUpdateText !== t.latestUpdate.text) {
     t.latestUpdate = { text: d.latestUpdateText, at: new Date().toISOString() };
   }
@@ -180,10 +208,42 @@ export function createTask(projectId: string, d: Partial<TaskDraft> = {}): Task 
     techOwner: d.techOwnerName ? toPerson(d.techOwnerName) : p.techOwner,
     businessOwner: d.businessOwnerName ? toPerson(d.businessOwnerName) : p.businessOwner,
     latestUpdate: { text: d.latestUpdateText || "Task created", at: new Date().toISOString() },
+    priority: d.priority ?? "Medium",
+    boardColumn: d.boardColumn,
   };
   p.tasks.unshift(task);
   bump();
   return task;
+}
+
+export function moveTaskColumn(projectId: string, taskId: string, column: BoardColumn) {
+  const p = projects.find((pp) => pp.id === projectId);
+  if (!p) return;
+  const t = p.tasks.find((tt) => tt.id === taskId);
+  if (!t) return;
+  t.boardColumn = column;
+  // Keep status / sprint in sync with column intent
+  if (column === "done") t.status = "Completed";
+  else if (column === "blocked") t.status = "Blocked";
+  else if (column === "progress" || column === "uat") t.status = "In Progress";
+  else t.status = "On Track";
+  if (column === "sprint" || column === "progress" || column === "blocked" || column === "uat") {
+    t.inSprint = true;
+    t.sprint = t.sprint || "Current Sprint";
+  } else if (column === "backlog" || column === "prio") {
+    t.inSprint = false;
+  }
+  bump();
+}
+
+export function deriveTaskColumn(t: Task): BoardColumn {
+  if (t.boardColumn) return t.boardColumn;
+  if (t.status === "Completed") return "done";
+  if (t.status === "Blocked" || t.status === "Delayed") return "blocked";
+  if (t.status === "In Progress") return "progress";
+  if (t.inSprint) return "sprint";
+  if (t.priority === "Critical" || t.priority === "High") return "prio";
+  return "backlog";
 }
 
 /* ---------------- Pipeline ---------------- */

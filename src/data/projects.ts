@@ -3,6 +3,15 @@ export type Priority = "Critical" | "High" | "Medium" | "Low";
 export type Status = "On Track" | "In Progress" | "Blocked" | "Delayed" | "Completed";
 export type TaskType = "Enhancement" | "Bug" | "Discovery" | "Integration" | "Strategic" | "Issue";
 
+export type BoardColumn =
+  | "backlog"
+  | "prio"
+  | "sprint"
+  | "progress"
+  | "blocked"
+  | "uat"
+  | "done";
+
 export interface Person {
   name: string;
   initials: string;
@@ -24,6 +33,8 @@ export interface Task {
   techOwner: Person;
   businessOwner: Person;
   latestUpdate: UpdateEntry;
+  priority?: Priority;
+  boardColumn?: BoardColumn;
 }
 
 export interface Project {
