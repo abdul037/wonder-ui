@@ -14,6 +14,9 @@ import { relativeTime } from "@/lib/time";
 import { useIsAdmin } from "@/lib/admin";
 import { useDataVersion } from "@/lib/store";
 import { ProjectEditDialog } from "@/components/admin-edit/ProjectEditDialog";
+import { TaskEditDialog } from "@/components/admin-edit/TaskEditDialog";
+import { createTask } from "@/lib/store";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/portfolio")({
   head: () => ({
@@ -42,6 +45,11 @@ type View = "list" | "grid";
 interface TaskRow {
   project: Project;
   task: Task;
+}
+
+interface TaskEditTarget {
+  project: Project;
+  task: Task | null; // null = create
 }
 
 function Avatar({ person, size = 24 }: { person: Person; size?: number }) {
@@ -97,6 +105,25 @@ function PortfolioIndex() {
   useDataVersion();
   const [editing, setEditing] = useState<Project | null>(null);
   const [creating, setCreating] = useState(false);
+  const [taskEdit, setTaskEdit] = useState<TaskEditTarget | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+
+  const toggleExpand = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const addTaskToProject = (project: Project) => {
+    const t = createTask(project.id, { name: "New task", status: "On Track" });
+    if (t) {
+      setExpanded((prev) => new Set(prev).add(project.id));
+      setTaskEdit({ project, task: t });
+      toast.success("Task created — fill in details");
+    }
+  };
 
   const sprints = useMemo(() => {
     const s = new Set<string>();
