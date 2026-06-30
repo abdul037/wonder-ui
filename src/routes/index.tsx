@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { projects, workstreamLabel, workstreamFullName, type Workstream, type Status, type Priority } from "@/data/projects";
+import { projects, workstreamLabel, workstreamFullName, type Workstream, type Status } from "@/data/projects";
 import { updates as newsUpdates } from "@/data/newsletter";
 import { relativeTime } from "@/lib/time";
 
