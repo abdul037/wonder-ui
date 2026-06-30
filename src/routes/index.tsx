@@ -167,12 +167,22 @@ function Dashboard() {
     }));
 
     // Owner workload (currently with)
-    const ownerMap = new Map<string, { name: string; initials: string; actions: number; blocked: number }>();
+    const ownerMap = new Map<
+      string,
+      { name: string; initials: string; actions: number; blocked: number; statusCounts: Record<Status, number> }
+    >();
     for (const t of allTasks) {
       const key = t.currentlyWith.name;
-      const cur = ownerMap.get(key) ?? { name: t.currentlyWith.name, initials: t.currentlyWith.initials, actions: 0, blocked: 0 };
+      const cur = ownerMap.get(key) ?? {
+        name: t.currentlyWith.name,
+        initials: t.currentlyWith.initials,
+        actions: 0,
+        blocked: 0,
+        statusCounts: { "On Track": 0, "In Progress": 0, Blocked: 0, Delayed: 0, Completed: 0 },
+      };
       cur.actions += 1;
       if (t.status === "Blocked") cur.blocked += 1;
+      cur.statusCounts[t.status as Status] += 1;
       ownerMap.set(key, cur);
     }
     const owners = Array.from(ownerMap.values()).sort((a, b) => b.actions - a.actions).slice(0, 5);
