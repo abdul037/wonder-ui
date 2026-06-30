@@ -14,7 +14,9 @@ import { Route as SprintBoardRouteImport } from './routes/sprint-board'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as NewsletterRouteImport } from './routes/newsletter'
 import { Route as ImportRouteImport } from './routes/import'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PortfolioProjectIdRouteImport } from './routes/portfolio.$projectId'
 
@@ -43,9 +45,19 @@ const PortfolioRoute = PortfolioRouteImport.update({
   path: '/portfolio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NewsletterRoute = NewsletterRouteImport.update({
+  id: '/newsletter',
+  path: '/newsletter',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ImportRoute = ImportRouteImport.update({
   id: '/import',
   path: '/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -61,7 +73,9 @@ const PortfolioProjectIdRoute = PortfolioProjectIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/import': typeof ImportRoute
+  '/newsletter': typeof NewsletterRoute
   '/portfolio': typeof PortfolioRouteWithChildren
   '/roadmap': typeof RoadmapRoute
   '/settings': typeof SettingsRoute
@@ -71,7 +85,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/import': typeof ImportRoute
+  '/newsletter': typeof NewsletterRoute
   '/portfolio': typeof PortfolioRouteWithChildren
   '/roadmap': typeof RoadmapRoute
   '/settings': typeof SettingsRoute
@@ -82,7 +98,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/import': typeof ImportRoute
+  '/newsletter': typeof NewsletterRoute
   '/portfolio': typeof PortfolioRouteWithChildren
   '/roadmap': typeof RoadmapRoute
   '/settings': typeof SettingsRoute
@@ -94,7 +112,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/import'
+    | '/newsletter'
     | '/portfolio'
     | '/roadmap'
     | '/settings'
@@ -104,7 +124,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/import'
+    | '/newsletter'
     | '/portfolio'
     | '/roadmap'
     | '/settings'
@@ -114,7 +136,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/import'
+    | '/newsletter'
     | '/portfolio'
     | '/roadmap'
     | '/settings'
@@ -125,7 +149,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   ImportRoute: typeof ImportRoute
+  NewsletterRoute: typeof NewsletterRoute
   PortfolioRoute: typeof PortfolioRouteWithChildren
   RoadmapRoute: typeof RoadmapRoute
   SettingsRoute: typeof SettingsRoute
@@ -170,11 +196,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PortfolioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/newsletter': {
+      id: '/newsletter'
+      path: '/newsletter'
+      fullPath: '/newsletter'
+      preLoaderRoute: typeof NewsletterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/import': {
       id: '/import'
       path: '/import'
       fullPath: '/import'
       preLoaderRoute: typeof ImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -208,7 +248,9 @@ const PortfolioRouteWithChildren = PortfolioRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   ImportRoute: ImportRoute,
+  NewsletterRoute: NewsletterRoute,
   PortfolioRoute: PortfolioRouteWithChildren,
   RoadmapRoute: RoadmapRoute,
   SettingsRoute: SettingsRoute,
