@@ -261,7 +261,7 @@ function PortfolioIndex() {
   );
 }
 
-function ProjectsTable({ rows }: { rows: Project[] }) {
+function ProjectsTable({ rows, isAdmin, onEdit }: { rows: Project[]; isAdmin: boolean; onEdit: (p: Project) => void }) {
   return (
     <div className="bg-surface-card rounded-xl border border-border-subtle overflow-hidden shadow-sm">
       <div className="overflow-x-auto custom-scrollbar">
@@ -274,6 +274,7 @@ function ProjectsTable({ rows }: { rows: Project[] }) {
               ].map((h) => (
                 <th key={h} className="px-4 py-3 font-medium whitespace-nowrap">{h}</th>
               ))}
+              {isAdmin && <th className="px-3 py-3" />}
             </tr>
           </thead>
           <tbody className="divide-y divide-border-subtle">
@@ -305,6 +306,17 @@ function ProjectsTable({ rows }: { rows: Project[] }) {
                     <p className="text-[10px] font-mono text-on-surface-variant mt-0.5">{relativeTime(p.latestUpdate.at)}</p>
                   </td>
                   <td className="px-4 py-4"><WorkstreamChip ws={p.workstream} /></td>
+                  {isAdmin && (
+                    <td className="px-3 py-4">
+                      <button
+                        onClick={() => onEdit(p)}
+                        title="Edit project"
+                        className="text-primary hover:bg-primary/10 rounded p-1"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">edit</span>
+                      </button>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -366,18 +378,34 @@ function TasksTable({ rows }: { rows: TaskRow[] }) {
   );
 }
 
-function ProjectsGrid({ rows }: { rows: Project[] }) {
+function ProjectsGrid({ rows, isAdmin, onEdit }: { rows: Project[]; isAdmin: boolean; onEdit: (p: Project) => void }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-fr">
       {rows.map((p) => {
         const lead = p.tasks[0];
         return (
-          <Link
+          <div
             key={p.id}
-            to="/portfolio/$projectId"
-            params={{ projectId: p.id }}
-            className={`group bg-surface-card border border-border-subtle rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border-l-4 border-l-workstream-${p.workstream.toLowerCase()} card-hover-effect min-h-[240px] flex flex-col`}
+            className={`group relative bg-surface-card border border-border-subtle rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border-l-4 border-l-workstream-${p.workstream.toLowerCase()} card-hover-effect min-h-[240px] flex flex-col`}
           >
+            {isAdmin && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onEdit(p);
+                }}
+                title="Edit project"
+                className="absolute top-3 right-3 z-10 text-primary bg-surface-card border border-border-subtle rounded-md p-1 shadow-sm hover:bg-primary/10"
+              >
+                <span className="material-symbols-outlined text-[16px]">edit</span>
+              </button>
+            )}
+            <Link
+              to="/portfolio/$projectId"
+              params={{ projectId: p.id }}
+              className="flex-1 flex flex-col"
+            >
             <div className="p-5 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div>
