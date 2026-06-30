@@ -6,10 +6,12 @@ const navItems = [
   { to: "/portfolio", icon: "folder_special", label: "Portfolio" },
   { to: "/sprint-board", icon: "view_kanban", label: "Sprint Board" },
   { to: "/roadmap", icon: "map", label: "Roadmap" },
+  { to: "/newsletter", icon: "campaign", label: "Newsletter" },
   { to: "/import", icon: "upload_file", label: "Import Data" },
 ] as const;
 
 const utilityItems = [
+  { to: "/admin", icon: "admin_panel_settings", label: "Admin" },
   { to: "/settings", icon: "settings", label: "Settings" },
   { to: "/support", icon: "help", label: "Support" },
 ] as const;
