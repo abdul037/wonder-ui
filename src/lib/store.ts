@@ -9,8 +9,9 @@ import {
   type Task,
   type Workstream,
 } from "@/data/projects";
+import type { UpdateEntry } from "@/data/projects";
 import { pipelineItems, type PipelineEffort, type PipelineItem, type PipelineSource, type PipelineStage } from "@/data/pipeline";
-import { updates, type UpdateEntry } from "@/data/newsletter";
+import { updates, type UpdateEntry as NewsletterEntry } from "@/data/newsletter";
 
 const listeners = new Set<() => void>();
 let version = 0;
@@ -81,7 +82,9 @@ export function applyProjectDraft(id: string, d: ProjectDraft) {
   p.businessOwner = toPerson(d.businessOwnerName);
   p.currentlyWith = toPerson(d.currentlyWithName);
   if (d.latestUpdateText && d.latestUpdateText !== p.latestUpdate.text) {
-    p.latestUpdate = { text: d.latestUpdateText, at: new Date().toISOString() };
+    const entry: UpdateEntry = { text: d.latestUpdateText, at: new Date().toISOString(), kind: "update" };
+    p.latestUpdate = entry;
+    p.updates = [entry, ...(p.updates ?? [])];
   }
   bump();
 }
@@ -128,6 +131,7 @@ export function createProject(d: ProjectDraft) {
     enhancementLog: [{ date: today, entry: "Project created via Admin Mode." }],
     latestUpdate: { text: d.latestUpdateText || "Project created.", at: new Date().toISOString() },
     tasks: [],
+    updates: [{ text: d.latestUpdateText || "Project created.", at: new Date().toISOString(), kind: "system" }],
   };
   projects.unshift(proj);
   bump();
@@ -179,7 +183,9 @@ export function applyTaskDraft(projectId: string, taskId: string, d: TaskDraft) 
   if (d.priority) t.priority = d.priority;
   t.boardColumn = d.boardColumn;
   if (d.latestUpdateText && d.latestUpdateText !== t.latestUpdate.text) {
-    t.latestUpdate = { text: d.latestUpdateText, at: new Date().toISOString() };
+    const entry: UpdateEntry = { text: d.latestUpdateText, at: new Date().toISOString(), kind: "update" };
+    t.latestUpdate = entry;
+    t.updates = [entry, ...(t.updates ?? [])];
   }
   bump();
 }
@@ -210,6 +216,7 @@ export function createTask(projectId: string, d: Partial<TaskDraft> = {}): Task 
     latestUpdate: { text: d.latestUpdateText || "Task created", at: new Date().toISOString() },
     priority: d.priority ?? "Medium",
     boardColumn: d.boardColumn,
+    updates: [{ text: d.latestUpdateText || "Task created", at: new Date().toISOString(), kind: "system" }],
   };
   p.tasks.unshift(task);
   bump();
@@ -355,6 +362,7 @@ export function promotePipeline(id: string): Project | null {
     blockers: [],
     enhancementLog: [{ date: today, entry: `Promoted from pipeline intake ${item.id}.` }],
     latestUpdate: { text: "Project promoted from pipeline.", at: new Date().toISOString() },
+    updates: [{ text: "Project promoted from pipeline.", at: new Date().toISOString(), kind: "system" }],
   };
   projects.unshift(promoted);
   pipelineItems.splice(i, 1);
@@ -364,7 +372,7 @@ export function promotePipeline(id: string): Project | null {
 
 /* ---------------- Newsletter ---------------- */
 
-export function addUpdate(u: UpdateEntry) {
+export function addUpdate(u: NewsletterEntry) {
   updates.unshift(u);
   bump();
 }
@@ -373,5 +381,65 @@ export function deleteUpdate(id: string) {
   const i = updates.findIndex((u) => u.id === id);
   if (i < 0) return;
   updates.splice(i, 1);
+  bump();
+}
+
+/* ---------------- Project quick-actions ---------------- */
+
+export function appendProjectUpdate(projectId: string, text: string, kind: UpdateEntry["kind"] = "update", author = "Abdul Muwahib") {
+  const p = projects.find((pp) => pp.id === projectId);
+  if (!p) return;
+  const trimmed = text.trim();
+  if (!trimmed) return;
+  const entry: UpdateEntry = { text: trimmed, at: new Date().toISOString(), author, kind };
+  p.updates = [entry, ...(p.updates ?? [])];
+  p.latestUpdate = entry;
+  bump();
+  return entry;
+}
+
+export function appendTaskUpdate(projectId: string, taskId: string, text: string, kind: UpdateEntry["kind"] = "update", author = "Abdul Muwahib") {
+  const p = projects.find((pp) => pp.id === projectId);
+  if (!p) return;
+  const t = p.tasks.find((tt) => tt.id === taskId);
+  if (!t) return;
+  const trimmed = text.trim();
+  if (!trimmed) return;
+  const entry: UpdateEntry = { text: trimmed, at: new Date().toISOString(), author, kind };
+  t.updates = [entry, ...(t.updates ?? [])];
+  t.latestUpdate = entry;
+  bump();
+  return entry;
+}
+
+export function addBlocker(projectId: string, title: string, detail = "") {
+  const p = projects.find((pp) => pp.id === projectId);
+  if (!p || !title.trim()) return;
+  p.blockers = [{ title: title.trim(), detail, ago: "just now" }, ...p.blockers];
+  appendProjectUpdate(projectId, `Blocker added: ${title.trim()}`, "blocker");
+  if (p.status !== "Blocked") p.status = "Blocked";
+  bump();
+}
+
+export function resolveBlocker(projectId: string, title: string) {
+  const p = projects.find((pp) => pp.id === projectId);
+  if (!p) return;
+  p.blockers = p.blockers.filter((b) => b.title !== title);
+  appendProjectUpdate(projectId, `Blocker resolved: ${title}`, "system");
+  bump();
+}
+
+export function addTimelineEvent(projectId: string, date: string, title: string, detail?: string) {
+  const p = projects.find((pp) => pp.id === projectId);
+  if (!p || !title.trim()) return;
+  p.timeline = [{ date, title: title.trim(), detail, complete: false }, ...p.timeline];
+  appendProjectUpdate(projectId, `Milestone added: ${title.trim()}`, "milestone");
+  bump();
+}
+
+export function updateProjectMeta(projectId: string, patch: Partial<Pick<Project, "status" | "targetDate" | "estimatedHours" | "progress" | "executiveUpdate" | "summary">>) {
+  const p = projects.find((pp) => pp.id === projectId);
+  if (!p) return;
+  Object.assign(p, patch);
   bump();
 }
