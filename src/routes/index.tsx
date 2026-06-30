@@ -87,7 +87,7 @@ function KpiTile({
   );
 }
 
-function StatusBar({ counts, total }: { counts: Record<Status, number>; total: number }) {
+function StatusPills({ counts }: { counts: Record<Status, number> }) {
   const segs: { status: Status; color: string }[] = [
     { status: "Completed", color: "bg-status-low" },
     { status: "On Track", color: "bg-workstream-au" },
@@ -96,24 +96,37 @@ function StatusBar({ counts, total }: { counts: Record<Status, number>; total: n
     { status: "Blocked", color: "bg-status-critical" },
   ];
   return (
-    <div>
-      <div className="flex w-full h-3 rounded-full overflow-hidden bg-surface-container">
-        {segs.map((s) => {
-          const pct = total ? (counts[s.status] / total) * 100 : 0;
-          if (!pct) return null;
-          return <div key={s.status} className={s.color} style={{ width: `${pct}%` }} title={`${s.status}: ${counts[s.status]}`} />;
-        })}
-      </div>
-      <div className="flex flex-wrap gap-4 mt-4">
-        {segs.map((s) => (
-          <div key={s.status} className="flex items-center gap-2">
-            <span className={`w-2.5 h-2.5 rounded-full ${s.color}`} />
-            <span className="text-xs text-on-surface-variant">{s.status}</span>
-            <span className="text-xs font-bold text-on-surface">{counts[s.status]}</span>
-          </div>
-        ))}
-      </div>
+    <div className="flex flex-wrap gap-3">
+      {segs.map((s) => (
+        <div
+          key={s.status}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-container border border-border-subtle"
+        >
+          <span className={`w-2.5 h-2.5 rounded-full ${s.color}`} />
+          <span className="text-xs text-on-surface-variant">{s.status}</span>
+          <span className="text-xs font-bold text-on-surface">{counts[s.status]}</span>
+        </div>
+      ))}
     </div>
+  );
+}
+
+function StatusMini({ status, count }: { status: Status; count: number }) {
+  const color =
+    status === "Completed"
+      ? "status-low"
+      : status === "On Track"
+      ? "workstream-au"
+      : status === "In Progress"
+      ? "primary"
+      : status === "Delayed"
+      ? "status-high"
+      : "status-critical";
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold bg-${color}/10 text-${color}`}>
+      <span className={`w-1.5 h-1.5 rounded-full bg-${color}`} />
+      {count} {status}
+    </span>
   );
 }
 
