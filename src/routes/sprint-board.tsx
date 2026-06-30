@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
+import { useIsAdmin } from "@/lib/admin";
 
 export const Route = createFileRoute("/sprint-board")({
   head: () => ({
@@ -216,8 +217,19 @@ function TaskCard({ task, accent }: { task: Task; accent?: string }) {
 }
 
 function SprintBoard() {
+  const isAdmin = useIsAdmin();
   return (
     <AppShell>
+      {isAdmin && (
+        <div className="px-6 py-2 bg-status-medium/10 border-b border-status-medium/20 flex items-center gap-2 text-[11px] text-on-surface">
+          <span className="material-symbols-outlined !text-[16px] text-status-medium">edit_note</span>
+          <span>
+            Admin mode is ON. Sprint tasks are edited from the
+            {" "}<Link to="/portfolio" className="text-primary font-bold underline">Portfolio · Tasks</Link>{" "}
+            view (where each task has Sprint toggle, status and owner).
+          </span>
+        </div>
+      )}
       <section className="px-6 py-3 flex flex-wrap items-center justify-between gap-4 border-b border-border-subtle bg-surface-card">
         <div className="flex items-center gap-6">
           <div>
