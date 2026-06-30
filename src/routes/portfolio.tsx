@@ -82,24 +82,11 @@ function StatusPill({ s }: { s: Status }) {
   );
 }
 
-function SprintPill({ task }: { task: Task }) {
-  if (!task.inSprint) {
-    return <span className="text-[10px] uppercase tracking-wide text-on-surface-variant">Backlog</span>;
-  }
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-[10px] font-bold uppercase">
-      <span className="material-symbols-outlined text-[12px]">flag</span>
-      {task.sprint ?? "In Sprint"}
-    </span>
-  );
-}
-
 function PortfolioIndex() {
   const [view, setView] = useState<View>("list");
   const [scope, setScope] = useState<Scope>("projects");
   const [wsFilter, setWsFilter] = useState<Workstream | "ALL">("ALL");
   const [statusFilter, setStatusFilter] = useState<Status | "ALL">("ALL");
-  const [sprintFilter, setSprintFilter] = useState<string>("ALL");
   const [query, setQuery] = useState("");
   const isAdmin = useIsAdmin();
   useDataVersion();
@@ -125,19 +112,11 @@ function PortfolioIndex() {
     }
   };
 
-  const sprints = useMemo(() => {
-    const s = new Set<string>();
-    projects.forEach((p) => p.tasks.forEach((t) => t.sprint && s.add(t.sprint)));
-    return ["ALL", ...Array.from(s).sort()];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects.length]);
-
   const filteredProjects = useMemo(() => {
     const q = query.trim().toLowerCase();
     return projects.filter((p) => {
       if (wsFilter !== "ALL" && p.workstream !== wsFilter) return false;
       if (statusFilter !== "ALL" && p.status !== statusFilter) return false;
-      if (sprintFilter !== "ALL" && !p.tasks.some((t) => t.sprint === sprintFilter)) return false;
       if (!q) return true;
       return (
         p.name.toLowerCase().includes(q) ||
@@ -146,7 +125,7 @@ function PortfolioIndex() {
         p.tasks.some((t) => t.name.toLowerCase().includes(q) || t.id.toLowerCase().includes(q))
       );
     });
-  }, [wsFilter, statusFilter, sprintFilter, query]);
+  }, [wsFilter, statusFilter, query]);
 
   const filteredTasks: TaskRow[] = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -155,7 +134,6 @@ function PortfolioIndex() {
       if (wsFilter !== "ALL" && p.workstream !== wsFilter) return;
       p.tasks.forEach((task) => {
         if (statusFilter !== "ALL" && task.status !== statusFilter) return;
-        if (sprintFilter !== "ALL" && task.sprint !== sprintFilter) return;
         if (q) {
           const hay = `${p.name} ${task.name} ${task.id} ${task.techOwner.name} ${task.businessOwner.name} ${task.currentlyWith.name}`.toLowerCase();
           if (!hay.includes(q)) return;
@@ -164,7 +142,7 @@ function PortfolioIndex() {
       });
     });
     return rows;
-  }, [wsFilter, statusFilter, sprintFilter, query]);
+  }, [wsFilter, statusFilter, query]);
 
   return (
     <AppShell>
@@ -258,15 +236,6 @@ function PortfolioIndex() {
           >
             {STATUSES.map((s) => (
               <option key={s} value={s}>{s === "ALL" ? "All statuses" : s}</option>
-            ))}
-          </select>
-          <select
-            value={sprintFilter}
-            onChange={(e) => setSprintFilter(e.target.value)}
-            className="bg-surface-container-low border border-border-subtle rounded-lg px-3 py-2 text-xs"
-          >
-            {sprints.map((s) => (
-              <option key={s} value={s}>{s === "ALL" ? "All sprints" : s}</option>
             ))}
           </select>
         </div>
