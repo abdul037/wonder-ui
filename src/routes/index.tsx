@@ -609,15 +609,129 @@ function Dashboard() {
         </section>
 
         {/* Project cards grid */}
-        <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {scoped.length === 0 && (
-            <div className="md:col-span-2 xl:col-span-3 bg-surface-card border border-dashed border-border-subtle rounded-xl p-8 text-center text-sm text-on-surface-variant">
-              No projects match the current filters.
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-on-surface">
+              Projects <span className="text-on-surface-variant font-mono font-normal text-xs ml-1">({scoped.length})</span>
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {scoped.length === 0 && (
+              <div className="md:col-span-2 xl:col-span-3 bg-surface-card border border-dashed border-border-subtle rounded-xl p-8 text-center text-sm text-on-surface-variant">
+                No projects match the current filters.
+              </div>
+            )}
+            {scoped.map((p) => (
+              <ProjectCard key={p.id} project={p} />
+            ))}
+          </div>
+        </section>
+
+        {/* Matching Actions (tasks) */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-on-surface">
+              Actions <span className="text-on-surface-variant font-mono font-normal text-xs ml-1">({scopedActions.length})</span>
+            </h2>
+            <span className="text-[11px] text-on-surface-variant">
+              {hasAnyFilter ? "Filtered by current criteria" : "All actions in scope"}
+            </span>
+          </div>
+          <div className="bg-surface-card rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-surface-container text-on-surface-variant text-[10px] uppercase tracking-wider">
+                    <th className="text-left font-bold px-4 py-2.5">Action</th>
+                    <th className="text-left font-bold px-3 py-2.5">Project</th>
+                    <th className="text-left font-bold px-3 py-2.5">WS</th>
+                    <th className="text-left font-bold px-3 py-2.5">Status</th>
+                    <th className="text-left font-bold px-3 py-2.5">Effort</th>
+                    <th className="text-left font-bold px-3 py-2.5">Priority</th>
+                    <th className="text-left font-bold px-3 py-2.5">Release</th>
+                    <th className="text-left font-bold px-3 py-2.5">Owner</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {scopedActions.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-6 text-center text-on-surface-variant">
+                        No actions match the current filters.
+                      </td>
+                    </tr>
+                  )}
+                  {scopedActions.map(({ project, task, attrs }) => {
+                    const statusColor =
+                      attrs?.taskStatus === "Closed"
+                        ? "status-low"
+                        : attrs?.taskStatus === "In Progress"
+                        ? "primary"
+                        : attrs?.taskStatus === "On Hold"
+                        ? "status-critical"
+                        : "status-medium";
+                    const effortColor =
+                      attrs?.effort === "High" ? "status-critical" : attrs?.effort === "Medium" ? "status-medium" : "status-low";
+                    const priColor =
+                      attrs?.issuePriority === "P1" ? "status-critical" : attrs?.issuePriority === "P2" ? "status-high" : "status-medium";
+                    const relColor = attrs?.release === "Web App" ? "primary" : "workstream-au";
+                    return (
+                      <tr key={task.id} className="border-t border-border-subtle hover:bg-surface-container/50">
+                        <td className="px-4 py-2.5">
+                          <div className="font-medium text-on-surface">{task.name}</div>
+                          <div className="font-mono text-[10px] text-on-surface-variant">{task.id}</div>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <Link
+                            to="/portfolio/$projectId"
+                            params={{ projectId: project.id }}
+                            className="text-on-surface hover:text-primary truncate"
+                          >
+                            {project.name}
+                          </Link>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-bold bg-workstream-${project.workstream.toLowerCase()}/10 text-workstream-${project.workstream.toLowerCase()}`}
+                          >
+                            {project.workstream}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-${statusColor}/10 text-${statusColor}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full bg-${statusColor}`} />
+                            {attrs?.taskStatus}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold bg-${effortColor}/10 text-${effortColor}`}>
+                            {attrs?.effort}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold bg-${priColor}/10 text-${priColor}`}>
+                            {attrs?.issuePriority}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold bg-${relColor}/10 text-${relColor}`}>
+                            {attrs?.release}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center text-[9px] font-bold">
+                              {task.currentlyWith.initials}
+                            </span>
+                            <span className="text-on-surface-variant text-[11px]">{task.currentlyWith.name}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          )}
-          {scoped.map((p) => (
-            <ProjectCard key={p.id} project={p} />
-          ))}
+          </div>
         </section>
 
         {/* Bottom row — Key Milestones + Critical Blockers */}
