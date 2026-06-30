@@ -4,6 +4,17 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { projects as seedProjects, type Project, type Status, type Workstream, type Priority, type Task } from "@/data/projects";
 import { updates as seedUpdates, type UpdateEntry } from "@/data/newsletter";
+import {
+  pipelineItems as seedPipeline,
+  pipelineStages,
+  pipelineSources,
+  pipelineEfforts,
+  pipelineStageColor,
+  type PipelineItem,
+  type PipelineStage,
+  type PipelineSource,
+  type PipelineEffort,
+} from "@/data/pipeline";
 import { relativeTime } from "@/lib/time";
 
 export const Route = createFileRoute("/admin")({
@@ -16,11 +27,12 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
-type TabKey = "projects" | "tasks" | "logs" | "newsletter";
+type TabKey = "projects" | "tasks" | "logs" | "newsletter" | "pipeline";
 
 const tabs: { key: TabKey; label: string; icon: string; desc: string }[] = [
   { key: "projects", label: "Projects", icon: "folder_special", desc: "Manage project info, status, and owners" },
   { key: "tasks", label: "Tasks", icon: "task_alt", desc: "Edit task assignments, sprints, and status" },
+  { key: "pipeline", label: "Pipeline", icon: "pending_actions", desc: "Manage intake — promote to active projects" },
   { key: "logs", label: "Enhancement Log", icon: "history_edu", desc: "Append timeline entries per project" },
   { key: "newsletter", label: "Newsletter", icon: "campaign", desc: "Compose and publish product updates" },
 ];
@@ -41,6 +53,7 @@ function AdminPage() {
   const [tab, setTab] = useState<TabKey>("projects");
   const [allProjects, setAllProjects] = useState<Project[]>(seedProjects);
   const [allUpdates, setAllUpdates] = useState<UpdateEntry[]>(seedUpdates);
+  const [allPipeline, setAllPipeline] = useState<PipelineItem[]>(seedPipeline);
 
   return (
     <AppShell>
@@ -94,6 +107,38 @@ function AdminPage() {
             {tab === "logs" && <LogsAdmin projects={allProjects} onChange={setAllProjects} />}
             {tab === "newsletter" && (
               <NewsletterAdmin updates={allUpdates} onChange={setAllUpdates} />
+            )}
+            {tab === "pipeline" && (
+              <PipelineAdmin
+                items={allPipeline}
+                onChange={setAllPipeline}
+                onPromote={(item) => {
+                  const promoted: Project = {
+                    id: `p-${Date.now()}`,
+                    eid: item.id,
+                    name: item.name,
+                    description: item.description,
+                    workstream: item.workstream,
+                    priority: item.priority,
+                    status: "On Track",
+                    progressLabel: "Discovery",
+                    techStack: [],
+                    techOwner: item.techOwner,
+                    businessOwner: item.businessOwner,
+                    currentlyWith: item.techOwner,
+                    tasks: [],
+                    timeline: [],
+                    blockers: [],
+                    enhancementLog: [
+                      { date: new Date().toISOString().slice(0, 10), entry: `Promoted from pipeline intake ${item.id}.` },
+                    ],
+                    latestUpdate: { text: `Project promoted from pipeline.`, at: new Date().toISOString() },
+                  };
+                  setAllProjects([promoted, ...allProjects]);
+                  setAllPipeline(allPipeline.filter((i) => i.id !== item.id));
+                  toast.success(`${item.name} promoted to active project`);
+                }}
+              />
             )}
           </section>
         </div>
