@@ -1,258 +1,284 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { projects, workstreamLabel, workstreamFullName, type Workstream, type Status } from "@/data/projects";
-import { updates as newsUpdates } from "@/data/newsletter";
-import { relativeTime } from "@/lib/time";
+import {
+  projects,
+  workstreamFullName,
+  type Workstream,
+  type Project,
+  type Priority,
+} from "@/data/projects";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Command Dashboard | Supply Chain Tech Hub" },
+      { title: "Executive Overview | Supply Chain Tech Hub" },
       {
         name: "description",
         content:
-          "Action-centric command dashboard for Supply Chain tech — major projects, in-flight actions, blockers, sprint load, owner workload, and live updates.",
+          "Executive overview of Supply Chain Tech Hub — major projects, actions, sprints and blockers across all workstreams.",
       },
-      { property: "og:title", content: "Command Dashboard | Supply Chain Tech Hub" },
-      { property: "og:description", content: "Major projects, actions, blockers, and live updates at a glance." },
+      { property: "og:title", content: "Executive Overview | Supply Chain Tech Hub" },
     ],
   }),
   component: Dashboard,
 });
 
-type Range = "Today" | "This Week" | "This Sprint";
-
+type Range = "Daily" | "Weekly" | "Monthly";
 const ALL_WS: (Workstream | "ALL")[] = ["ALL", "OX", "EX", "AU", "DW"];
 
-const statusOrder: Status[] = ["On Track", "In Progress", "Blocked", "Delayed", "Completed"];
+const priorityChip: Record<Priority, { label: string; cls: string }> = {
+  Critical: { label: "BOARD CRITICAL", cls: "bg-status-critical/10 text-status-critical" },
+  High: { label: "HIGH PRIORITY", cls: "bg-status-critical/10 text-status-critical" },
+  Medium: { label: "MED PRIORITY", cls: "bg-status-medium/15 text-status-medium" },
+  Low: { label: "LOW PRIORITY", cls: "bg-status-low/15 text-status-low" },
+};
 
-function clsAccent(accent: string) {
-  // returns text- and bg- helpers given a token name
-  return {
-    text: `text-${accent}`,
-    bg: `bg-${accent}`,
-    soft: `bg-${accent}/10`,
-    border: `border-${accent}/30`,
-  };
+// ───────── Sparkline visuals (inline SVG, pure decoration) ─────────
+function Sparkline({ kind, color }: { kind: "sine" | "rise" | "bars" | "zigzag" | "sliver"; color: string }) {
+  const stroke = `var(--color-${color})`;
+  const fill = `var(--color-${color})`;
+  switch (kind) {
+    case "sine":
+      return (
+        <svg viewBox="0 0 120 28" className="w-full h-7">
+          <path d="M0,18 Q15,6 30,18 T60,18 T90,18 T120,18" fill="none" stroke={stroke} strokeOpacity="0.35" strokeWidth="2" />
+        </svg>
+      );
+    case "rise":
+      return (
+        <svg viewBox="0 0 120 28" className="w-full h-7">
+          <polyline points="0,24 18,20 32,22 50,15 68,12 86,8 104,10 120,4" fill="none" stroke={stroke} strokeWidth="2" />
+        </svg>
+      );
+    case "bars":
+      return (
+        <svg viewBox="0 0 120 28" className="w-full h-7">
+          {[6, 18, 30, 42, 54, 66, 78, 90, 102].map((x, i) => (
+            <rect key={x} x={x} y={28 - (8 + ((i * 7) % 18))} width="8" height={8 + ((i * 7) % 18)} fill={fill} fillOpacity={0.25 + (i % 3) * 0.25} rx="1.5" />
+          ))}
+        </svg>
+      );
+    case "zigzag":
+      return (
+        <svg viewBox="0 0 120 28" className="w-full h-7">
+          <polyline points="0,20 12,6 24,20 36,6 48,20 60,6 72,20 84,6 96,20 108,6 120,20" fill="none" stroke={stroke} strokeWidth="2" />
+        </svg>
+      );
+    case "sliver":
+      return (
+        <div className="w-full h-1.5 rounded-full bg-surface-container overflow-hidden">
+          <div className={`h-full bg-${color} rounded-full`} style={{ width: "62%" }} />
+        </div>
+      );
+  }
 }
 
-function KpiTile({
+function KpiCard({
   label,
   value,
-  accent,
-  icon,
-  delta,
-  hint,
+  caption,
+  sparkline,
+  color,
   critical,
+  valueClass,
 }: {
-  label: string;
-  value: number | string;
-  accent: string;
-  icon: string;
-  delta?: { value: string; positive?: boolean };
-  hint?: string;
+  label: React.ReactNode;
+  value: string | number;
+  caption?: React.ReactNode;
+  sparkline: { kind: "sine" | "rise" | "bars" | "zigzag" | "sliver"; color: string };
+  color?: string;
   critical?: boolean;
+  valueClass?: string;
 }) {
-  const a = clsAccent(accent);
   return (
     <div
-      className={`bg-surface-card border border-border-subtle rounded-xl p-5 shadow-sm flex flex-col gap-4 transition-all hover:border-primary/40 hover:shadow-md ${
+      className={`bg-surface-card rounded-2xl p-5 border border-border-subtle shadow-sm flex flex-col justify-between min-h-[150px] transition-all hover:shadow-md hover:-translate-y-0.5 ${
         critical ? "border-l-4 border-l-status-critical" : ""
       }`}
     >
-      <div className="flex items-start justify-between">
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${a.soft}`}>
-          <span className={`material-symbols-outlined ${a.text}`}>{icon}</span>
-        </div>
-        {delta && (
-          <span
-            className={`flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-full ${
-              delta.positive ? "bg-status-low/10 text-status-low" : "bg-status-critical/10 text-status-critical"
-            }`}
-          >
-            <span className="material-symbols-outlined text-[14px]">
-              {delta.positive ? "trending_up" : "trending_down"}
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-on-surface-variant leading-tight">{label}</p>
+      <div className="flex items-end justify-between gap-3 mt-2">
+        <p className={`text-5xl font-black tracking-tight ${valueClass ?? (color ? `text-${color}` : "text-on-surface")}`}>
+          {value}
+        </p>
+        {caption && <p className="text-[11px] text-on-surface-variant pb-1 text-right">{caption}</p>}
+      </div>
+      <div className="mt-3">
+        <Sparkline kind={sparkline.kind} color={sparkline.color} />
+      </div>
+    </div>
+  );
+}
+
+// ───────── Project card matching reference ─────────
+function ProjectCard({ project }: { project: Project }) {
+  const ws = project.workstream.toLowerCase();
+  const pri = priorityChip[project.priority];
+  const phaseLabel = project.progressLabel;
+
+  // Map status → phase pill color
+  const statusToColor: Record<string, string> = {
+    "On Track": "status-low",
+    "In Progress": "primary",
+    Blocked: "status-critical",
+    Delayed: "status-high",
+    Completed: "status-low",
+  };
+  const phaseColor = statusToColor[project.status] ?? "primary";
+
+  // Tech icons (Material Symbols approximations)
+  const techIcons: Record<string, string> = {
+    "Node.js": "database",
+    AWS: "cloud",
+    Python: "terminal",
+    SQL: "database",
+    Swift: "smartphone",
+    TensorFlow: "memory",
+    Figma: "draw",
+    React: "code",
+    Confluence: "article",
+    Jira: "task",
+  };
+
+  // Meta chip (Sprint / Days left / Workstream)
+  const meta = project.sprint
+    ? { icon: "flag", label: project.sprint.toUpperCase() }
+    : { icon: "schedule", label: "ACTIVE" };
+
+  return (
+    <div className="bg-surface-card rounded-2xl border border-border-subtle shadow-sm flex flex-col transition-all hover:shadow-md hover:-translate-y-0.5">
+      <div className="p-5 flex-1">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide bg-workstream-${ws}/10 text-workstream-${ws}`}>
+              Workstream: {project.workstream}
             </span>
-            {delta.value}
-          </span>
-        )}
-      </div>
-      <div>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">{label}</p>
-        <p className={`text-4xl font-black font-mono mt-1 tracking-tight ${critical ? "text-status-critical" : "text-on-surface"}`}>{value}</p>
-        {hint && <p className="text-[11px] text-on-surface-variant mt-1">{hint}</p>}
-      </div>
-    </div>
-  );
-}
-
-function StatusPills({ counts }: { counts: Record<Status, number> }) {
-  const segs: { status: Status; color: string }[] = [
-    { status: "Completed", color: "bg-status-low" },
-    { status: "On Track", color: "bg-workstream-au" },
-    { status: "In Progress", color: "bg-primary" },
-    { status: "Delayed", color: "bg-status-high" },
-    { status: "Blocked", color: "bg-status-critical" },
-  ];
-  return (
-    <div className="flex flex-wrap gap-3">
-      {segs.map((s) => (
-        <div
-          key={s.status}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-container border border-border-subtle"
-        >
-          <span className={`w-2.5 h-2.5 rounded-full ${s.color}`} />
-          <span className="text-xs text-on-surface-variant">{s.status}</span>
-          <span className="text-xs font-bold text-on-surface">{counts[s.status]}</span>
+            <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide ${pri.cls}`}>
+              {pri.label}
+            </span>
+          </div>
+          <button className="text-on-surface-variant hover:text-on-surface" aria-label="More">
+            <span className="material-symbols-outlined text-[18px]">more_vert</span>
+          </button>
         </div>
-      ))}
-    </div>
-  );
-}
 
-function StatusMini({ status, count }: { status: Status; count: number }) {
-  const color =
-    status === "Completed"
-      ? "status-low"
-      : status === "On Track"
-      ? "workstream-au"
-      : status === "In Progress"
-      ? "primary"
-      : status === "Delayed"
-      ? "status-high"
-      : "status-critical";
-  return (
-    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold bg-${color}/10 text-${color}`}>
-      <span className={`w-1.5 h-1.5 rounded-full bg-${color}`} />
-      {count} {status}
-    </span>
+        <h3 className="text-lg font-bold text-on-surface leading-snug">{project.name}</h3>
+        <p className="text-sm text-on-surface-variant mt-1 line-clamp-3">{project.description}</p>
+
+        <div className="mt-5">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-on-surface">{phaseLabel}</span>
+            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-${phaseColor}/10 text-${phaseColor}`}>
+              <span className={`w-1.5 h-1.5 rounded-full bg-${phaseColor}`} />
+              {project.status}
+            </span>
+          </div>
+          <div className={`h-1 rounded-full bg-${phaseColor}/20 overflow-hidden`}>
+            <div className={`h-full bg-${phaseColor} rounded-full w-2/3`} />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between mt-5">
+          <div className="flex -space-x-2">
+            {[project.techOwner, project.businessOwner, project.currentlyWith]
+              .filter((p, i, arr) => arr.findIndex((x) => x.name === p.name) === i)
+              .slice(0, 3)
+              .map((person) => (
+                <div
+                  key={person.name}
+                  title={person.name}
+                  className="w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center text-[10px] font-bold ring-2 ring-surface-card"
+                >
+                  {person.initials}
+                </div>
+              ))}
+            {project.tasks.length > 1 && (
+              <div className="w-8 h-8 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center text-[10px] font-bold ring-2 ring-surface-card">
+                +{project.tasks.length}
+              </div>
+            )}
+          </div>
+          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-surface-container text-[11px] font-bold text-on-surface-variant">
+            <span className="material-symbols-outlined text-[14px]">{meta.icon}</span>
+            {meta.label}
+          </span>
+        </div>
+      </div>
+
+      <div className="px-5 py-3 border-t border-border-subtle flex items-center justify-between">
+        <div className="flex items-center gap-2 text-on-surface-variant">
+          {project.techStack.slice(0, 3).map((t) => (
+            <span key={t} title={t} className="material-symbols-outlined text-[18px]">
+              {techIcons[t] ?? "category"}
+            </span>
+          ))}
+        </div>
+        <Link
+          to="/portfolio/$projectId"
+          params={{ projectId: project.id }}
+          className="px-3 py-1.5 rounded-lg bg-primary-fixed text-on-primary-fixed text-xs font-bold hover:bg-primary hover:text-on-primary transition-colors"
+        >
+          View Details
+        </Link>
+      </div>
+    </div>
   );
 }
 
 function Dashboard() {
-  const [range, setRange] = useState<Range>("This Sprint");
+  const [range, setRange] = useState<Range>("Daily");
   const [activeWs, setActiveWs] = useState<Workstream | "ALL">("ALL");
 
   const scoped = activeWs === "ALL" ? projects : projects.filter((p) => p.workstream === activeWs);
-  const allTasks = scoped.flatMap((p) => p.tasks);
 
   const metrics = useMemo(() => {
-    const total = scoped.length;
+    const allTasks = projects.flatMap((p) => p.tasks);
+    const totalProjects = projects.length;
     const totalActions = allTasks.length;
-    const inProgress = allTasks.filter((t) => t.status === "In Progress").length;
-    const completed = allTasks.filter((t) => t.status === "Completed").length;
-    const blocked = scoped.filter((p) => p.status === "Blocked").length + allTasks.filter((t) => t.status === "Blocked").length;
-    const highPriority = scoped.filter((p) => p.priority === "Critical" || p.priority === "High").length;
     const inSprint = allTasks.filter((t) => t.inSprint).length;
-    const activeSprints = new Set(scoped.map((p) => p.sprint).filter(Boolean)).size;
+    const blocked =
+      projects.filter((p) => p.status === "Blocked").length +
+      allTasks.filter((t) => t.status === "Blocked").length;
+    const highPriority =
+      projects.filter((p) => p.priority === "High" || p.priority === "Critical").length +
+      allTasks.filter((t) => false).length; // placeholder for task priority
+    return { totalProjects, totalActions, inSprint, blocked, highPriority };
+  }, []);
 
-    const statusCounts = statusOrder.reduce<Record<Status, number>>(
-      (acc, s) => {
-        acc[s] = scoped.filter((p) => p.status === s).length;
-        return acc;
-      },
-      { "On Track": 0, "In Progress": 0, Blocked: 0, Delayed: 0, Completed: 0 }
-    );
-
-    const taskStatusCounts = statusOrder.reduce<Record<Status, number>>(
-      (acc, s) => {
-        acc[s] = allTasks.filter((t) => t.status === s).length;
-        return acc;
-      },
-      { "On Track": 0, "In Progress": 0, Blocked: 0, Delayed: 0, Completed: 0 }
-    );
-
-    const byWorkstream = (["OX", "EX", "AU", "DW"] as Workstream[]).map((ws) => {
-      const ps = projects.filter((p) => p.workstream === ws);
-      const tasks = ps.flatMap((p) => p.tasks);
-      const statusCounts = statusOrder.reduce<Record<Status, number>>(
-        (acc, s) => {
-          acc[s] = ps.filter((p) => p.status === s).length;
-          return acc;
-        },
-        { "On Track": 0, "In Progress": 0, Blocked: 0, Delayed: 0, Completed: 0 }
-      );
-      return {
-        ws,
-        projects: ps.length,
-        actions: tasks.length,
-        statusCounts,
-        blockers: ps.filter((p) => p.status === "Blocked").length,
-      };
-    });
-
-
-    // Owner workload (currently with)
-    const ownerMap = new Map<
-      string,
-      { name: string; initials: string; actions: number; blocked: number; statusCounts: Record<Status, number> }
-    >();
-    for (const t of allTasks) {
-      const key = t.currentlyWith.name;
-      const cur = ownerMap.get(key) ?? {
-        name: t.currentlyWith.name,
-        initials: t.currentlyWith.initials,
-        actions: 0,
-        blocked: 0,
-        statusCounts: { "On Track": 0, "In Progress": 0, Blocked: 0, Delayed: 0, Completed: 0 },
-      };
-      cur.actions += 1;
-      if (t.status === "Blocked") cur.blocked += 1;
-      cur.statusCounts[t.status as Status] += 1;
-      ownerMap.set(key, cur);
-    }
-    const owners = Array.from(ownerMap.values()).sort((a, b) => b.actions - a.actions).slice(0, 5);
-
-    return {
-      total,
-      totalActions,
-      inProgress,
-      completed,
-      blocked,
-      highPriority,
-      inSprint,
-      activeSprints,
-      statusCounts,
-      taskStatusCounts,
-      byWorkstream,
-      owners,
-    };
-  }, [scoped, allTasks]);
-
-  const upcoming = useMemo(() => {
-    return scoped
-      .flatMap((p) => p.timeline.filter((t) => !t.complete).map((t) => ({ p, t })))
-      .slice(0, 5);
-  }, [scoped]);
-
-  const recentBlockers = scoped.flatMap((p) => p.blockers.map((b) => ({ p, ...b }))).slice(0, 3);
-  const liveTasks = allTasks
-    .slice()
-    .sort((a, b) => new Date(b.latestUpdate.at).getTime() - new Date(a.latestUpdate.at).getTime())
-    .slice(0, 5);
+  // Milestones + blockers for the bottom row
+  const milestones = useMemo(
+    () =>
+      projects
+        .flatMap((p) => p.timeline.map((t) => ({ project: p, ...t })))
+        .slice(0, 4),
+    []
+  );
+  const blockers = useMemo(
+    () => projects.flatMap((p) => p.blockers.map((b) => ({ project: p, ...b }))).slice(0, 3),
+    []
+  );
 
   return (
     <AppShell>
       <div className="px-8 py-8 space-y-8 pb-24">
         {/* Header */}
-        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-4 sm:flex sm:flex-wrap sm:justify-between">
+        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:flex-wrap sm:justify-between">
           <div className="min-w-0">
-            <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-primary">Command Dashboard</p>
-            <h1 className="text-3xl sm:text-4xl font-black text-on-surface mt-1">Supply Chain Tech Hub</h1>
+            <h1 className="text-2xl sm:text-[28px] font-bold text-on-surface tracking-tight">Executive Overview</h1>
             <p className="text-on-surface-variant text-sm mt-1">
-              Action-centric oversight across major projects, sprints, blockers and owner workload.
+              Real-time performance metrics across strategic workstreams.
             </p>
           </div>
-          <div className="flex items-center gap-2 bg-surface-container p-1 rounded-lg shrink-0">
-            {(["Today", "This Week", "This Sprint"] as Range[]).map((r) => (
+          <div className="flex items-center gap-1 bg-surface-container p-1 rounded-xl shrink-0">
+            {(["Daily", "Weekly", "Monthly"] as Range[]).map((r) => (
               <button
                 key={r}
                 onClick={() => setRange(r)}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
                   range === r
-                    ? "bg-surface-card shadow-sm text-primary"
-                    : "text-on-surface-variant hover:bg-surface-container-high"
+                    ? "bg-surface-card shadow-sm text-on-surface"
+                    : "text-on-surface-variant hover:text-on-surface"
                 }`}
               >
                 {r}
@@ -261,396 +287,169 @@ function Dashboard() {
           </div>
         </header>
 
-        {/* Workstream filter */}
-        <div className="flex flex-wrap gap-2 items-center">
-          <span className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant mr-1">Workstream</span>
-          {ALL_WS.map((ws) => {
-            const active = activeWs === ws;
-            const label = ws === "ALL" ? "All Workstreams" : workstreamFullName[ws];
-            const color = ws === "ALL" ? "primary" : `workstream-${ws.toLowerCase()}`;
-            const count =
-              ws === "ALL" ? projects.length : projects.filter((p) => p.workstream === ws).length;
-            return (
-              <button
-                key={ws}
-                onClick={() => setActiveWs(ws)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium transition-all ${
-                  active
-                    ? `bg-${color} text-white shadow-md`
-                    : "bg-surface-card border border-border-subtle text-on-surface hover:border-primary"
-                }`}
-              >
-                {ws !== "ALL" && (
-                  <span className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded ${active ? "bg-white/20" : `bg-${color}/10 text-${color}`}`}>
-                    {ws}
-                  </span>
-                )}
-                <span>{label}</span>
-                <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${active ? "bg-white/20" : "bg-surface-container"}`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Primary KPI strip — action-centric */}
+        {/* KPI strip — 6 cards */}
         <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          <KpiTile
-            label="Major Projects"
-            value={metrics.total}
-            accent="primary"
-            icon="hub"
-            hint={`${metrics.activeSprints} active sprints`}
+          <KpiCard
+            label={<>Total Major<br />Projects</>}
+            value={metrics.totalProjects}
+            sparkline={{ kind: "sine", color: "primary" }}
           />
-          <KpiTile
+          <KpiCard
             label="Total Actions"
             value={metrics.totalActions}
-            accent="secondary"
-            icon="checklist"
-            hint={`${metrics.inSprint} in current sprint`}
+            sparkline={{ kind: "rise", color: "status-low" }}
           />
-          <KpiTile
-            label="In Progress"
-            value={metrics.inProgress}
-            accent="workstream-ox"
-            icon="autorenew"
-            delta={{ value: "+4", positive: true }}
+          <KpiCard
+            label={<>In Current<br />Sprint</>}
+            value={metrics.inSprint}
+            sparkline={{ kind: "bars", color: "primary" }}
           />
-          <KpiTile
-            label="Completed"
-            value={metrics.completed}
-            accent="status-low"
-            icon="task_alt"
-            hint="this cycle"
+          <KpiCard
+            label={<>Open<br />Blockers</>}
+            value={metrics.blocked}
+            color="status-critical"
+            critical
+            caption={<span className="text-status-critical font-bold">+2 this week</span>}
+            sparkline={{ kind: "zigzag", color: "status-critical" }}
           />
-          <KpiTile
+          <KpiCard
             label="High Priority"
             value={metrics.highPriority}
-            accent="status-high"
-            icon="priority_high"
-            hint="Critical + High"
+            color="status-high"
+            sparkline={{ kind: "sliver", color: "status-high" }}
           />
-          <KpiTile
-            label="Open Blockers"
-            value={metrics.blocked}
-            accent="status-critical"
-            icon="report"
-            critical
-            delta={{ value: "+2", positive: false }}
+          <KpiCard
+            label="Avg. Delivery"
+            value="14d"
+            caption={
+              <span>
+                <span className="text-status-low font-bold">Efficiency 92%</span> Q4 Target
+              </span>
+            }
+            sparkline={{ kind: "sliver", color: "status-low" }}
           />
         </section>
 
-        {/* Portfolio health + Workstream status breakdown */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 bg-surface-card border border-border-subtle rounded-xl p-6 shadow-sm">
-            <div className="mb-4">
-              <h3 className="text-lg font-bold text-on-surface">Portfolio Health</h3>
-              <p className="text-xs text-on-surface-variant">Project status distribution · {metrics.total} projects in scope</p>
-            </div>
-            <StatusPills counts={metrics.statusCounts} />
-
-            <div className="mt-6 pt-6 border-t border-border-subtle">
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
-                  Workstream Status Breakdown
-                </p>
-                <p className="text-[10px] text-on-surface-variant">counts per status</p>
-              </div>
-              <div className="space-y-3">
-                {metrics.byWorkstream.map((w) => (
-                  <div
-                    key={w.ws}
-                    className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-surface-container-lowest border border-border-subtle"
+        {/* Portfolio Distribution */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-on-surface">Portfolio Distribution</h2>
+            <button className="flex items-center gap-1 text-sm text-primary font-medium hover:underline">
+              <span className="material-symbols-outlined text-[18px]">tune</span>
+              Advanced Filters
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {ALL_WS.map((ws) => {
+              const active = activeWs === ws;
+              const label = ws === "ALL" ? "All Workstreams" : `${workstreamFullName[ws]} (${ws})`;
+              const color = ws === "ALL" ? "primary" : `workstream-${ws.toLowerCase()}`;
+              const count = ws === "ALL" ? projects.length : projects.filter((p) => p.workstream === ws).length;
+              return (
+                <button
+                  key={ws}
+                  onClick={() => setActiveWs(ws)}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
+                    active
+                      ? `bg-${color} text-white shadow-md`
+                      : "bg-surface-card border border-border-subtle text-on-surface hover:border-primary"
+                  }`}
+                >
+                  {ws !== "ALL" && <span className={`w-2 h-2 rounded-full ${active ? "bg-white" : `bg-${color}`}`} />}
+                  <span>{label}</span>
+                  <span
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                      active ? "bg-white/20 text-white" : "bg-surface-container text-on-surface-variant"
+                    }`}
                   >
-                    <div className="flex items-center gap-2 shrink-0 sm:w-44">
-                      <span
-                        className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-workstream-${w.ws.toLowerCase()}/10 text-workstream-${w.ws.toLowerCase()}`}
-                      >
-                        {w.ws}
-                      </span>
-                      <p className="text-xs font-bold text-on-surface truncate">{workstreamFullName[w.ws]}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2 flex-1">
-                      {statusOrder.map((s) => {
-                        const count = w.statusCounts[s];
-                        if (!count) return null;
-                        return <StatusMini key={s} status={s} count={count} />;
-                      })}
-                      {w.blockers === 0 && w.projects === 0 && (
-                        <span className="text-[10px] text-on-surface-variant">No projects in this scope</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-surface-card border border-border-subtle rounded-xl p-6 shadow-sm flex flex-col">
-            <h3 className="text-lg font-bold text-on-surface mb-1">Action Status Mix</h3>
-            <p className="text-xs text-on-surface-variant mb-4">{metrics.totalActions} actions across {metrics.total} projects</p>
-            <div className="space-y-2 flex-1">
-              {statusOrder.map((s) => {
-                const count = metrics.taskStatusCounts[s];
-                const color =
-                  s === "Completed"
-                    ? "status-low"
-                    : s === "On Track"
-                    ? "workstream-au"
-                    : s === "In Progress"
-                    ? "primary"
-                    : s === "Delayed"
-                    ? "status-high"
-                    : "status-critical";
-                return (
-                  <div key={s} className="flex items-center justify-between px-3 py-2 rounded-lg bg-surface-container border border-border-subtle">
-                    <span className="flex items-center gap-2 text-xs">
-                      <span className={`w-2 h-2 rounded-full bg-${color}`} />
-                      <span className="font-medium text-on-surface">{s}</span>
-                    </span>
-                    <span className="text-xs font-bold text-on-surface">{count}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <Link
-              to="/portfolio"
-              className="mt-4 w-full bg-primary-fixed text-on-primary-fixed text-xs font-bold py-2 rounded-lg text-center hover:bg-primary hover:text-white transition-colors"
-            >
-              Open Portfolio
-            </Link>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </section>
 
-        {/* Live actions + Owner workload + Blockers */}
-        <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Live actions feed */}
-          <div className="lg:col-span-2 bg-surface-card border border-border-subtle rounded-xl shadow-sm">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary">bolt</span>
-                <h3 className="text-lg font-bold text-on-surface">Live Actions Feed</h3>
-              </div>
-              <Link to="/portfolio" className="text-xs text-primary font-bold flex items-center gap-1 hover:underline">
-                All actions <span className="material-symbols-outlined text-sm">arrow_forward</span>
+        {/* Project cards grid */}
+        <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {scoped.map((p) => (
+            <ProjectCard key={p.id} project={p} />
+          ))}
+        </section>
+
+        {/* Bottom row — Key Milestones + Critical Blockers */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="bg-surface-card rounded-2xl border border-border-subtle shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-on-surface">Key Milestones</h3>
+              <Link to="/roadmap" className="text-xs text-primary font-bold hover:underline">
+                View roadmap →
               </Link>
             </div>
-            <ul className="divide-y divide-border-subtle">
-              {liveTasks.map((t) => {
-                const owner = scoped.find((p) => p.tasks.some((tt) => tt.id === t.id));
-                const statusColor =
-                  t.status === "Blocked"
-                    ? "status-critical"
-                    : t.status === "Delayed"
-                    ? "status-high"
-                    : t.status === "Completed"
-                    ? "status-low"
-                    : t.status === "In Progress"
-                    ? "primary"
-                    : "workstream-au";
-                return (
-                  <li key={t.id} className="px-6 py-4 hover:bg-surface-container-lowest transition-colors">
-                    <div className="flex items-start gap-4">
-                      <div className="flex flex-col items-center gap-1 shrink-0 pt-1">
-                        <span className={`w-2 h-2 rounded-full bg-${statusColor}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="font-mono text-[10px] text-on-surface-variant">{t.id}</span>
-                          {owner && (
-                            <span
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-workstream-${owner.workstream.toLowerCase()}/10 text-workstream-${owner.workstream.toLowerCase()}`}
-                            >
-                              {owner.workstream}
-                            </span>
-                          )}
-                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold bg-${statusColor}/10 text-${statusColor}`}>
-                            {t.status}
-                          </span>
-                          {t.inSprint && t.sprint && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-container text-on-surface-variant">
-                              {t.sprint}
-                            </span>
-                          )}
-                          <span className="text-[11px] text-on-surface-variant ml-auto">{relativeTime(t.latestUpdate.at)}</span>
-                        </div>
-                        <p className="text-sm font-medium text-on-surface truncate">{t.name}</p>
-                        <p className="text-xs text-on-surface-variant mt-1 line-clamp-1">{t.latestUpdate.text}</p>
-                        <div className="flex items-center gap-3 mt-2 text-[11px] text-on-surface-variant">
-                          <span className="flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[14px]">person</span>
-                            {t.currentlyWith.name}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[14px]">engineering</span>
-                            Tech: {t.techOwner.name}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[14px]">business_center</span>
-                            Biz: {t.businessOwner.name}
-                          </span>
-                        </div>
-                      </div>
+            <ul className="space-y-3">
+              {milestones.map((m, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span
+                    className={`material-symbols-outlined text-[20px] mt-0.5 ${
+                      m.complete ? "text-status-low" : "text-on-surface-variant"
+                    }`}
+                  >
+                    {m.complete ? "check_circle" : "radio_button_unchecked"}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-on-surface truncate">{m.title}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="font-mono text-[10px] text-on-surface-variant">{m.date}</span>
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-bold bg-workstream-${m.project.workstream.toLowerCase()}/10 text-workstream-${m.project.workstream.toLowerCase()}`}
+                      >
+                        {m.project.workstream}
+                      </span>
+                      <span className="text-[11px] text-on-surface-variant truncate">{m.project.name}</span>
                     </div>
-                  </li>
-                );
-              })}
-              {liveTasks.length === 0 && (
-                <li className="px-6 py-12 text-center text-sm text-on-surface-variant">No live actions in this scope.</li>
-              )}
+                  </div>
+                </li>
+              ))}
             </ul>
           </div>
 
-          {/* Owner workload */}
-          <div className="bg-surface-card border border-border-subtle rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary">groups</span>
-                <h3 className="text-lg font-bold text-on-surface">Owner Workload</h3>
-              </div>
-            </div>
-            <p className="text-xs text-on-surface-variant mb-4">Top owners by open actions</p>
-            <div className="space-y-3">
-              {metrics.owners.map((o) => (
-                <div key={o.name} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center text-[11px] font-bold shrink-0">
-                    {o.initials}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-medium text-on-surface truncate">{o.name}</span>
-                      <span className="font-bold text-on-surface">{o.actions}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {statusOrder.map((s) => {
-                        const count = o.statusCounts[s];
-                        if (!count) return null;
-                        return <StatusMini key={s} status={s} count={count} />;
-                      })}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Blockers + Upcoming milestones */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-status-critical/5 border border-status-critical/20 rounded-xl p-6">
+          <div className="bg-status-critical/5 rounded-2xl border border-status-critical/30 p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-status-critical">warning</span>
                 <h3 className="text-lg font-bold text-status-critical">Critical Blockers</h3>
               </div>
-              <span className="text-xs font-bold text-status-critical">{metrics.blocked} open</span>
+              <span className="text-xs font-bold text-status-critical">{blockers.length} open</span>
             </div>
             <div className="space-y-3">
-              {recentBlockers.length === 0 && (
-                <p className="text-sm text-on-surface-variant">No active blockers in this scope. </p>
+              {blockers.length === 0 && (
+                <p className="text-sm text-on-surface-variant">No active blockers.</p>
               )}
-              {recentBlockers.map((b, i) => (
-                <div key={i} className="p-4 bg-surface-card border border-border-subtle rounded-lg">
+              {blockers.map((b, i) => (
+                <Link
+                  key={i}
+                  to="/portfolio/$projectId"
+                  params={{ projectId: b.project.id }}
+                  className="block p-4 bg-surface-card rounded-lg border border-border-subtle hover:border-status-critical/50 transition-colors"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-on-surface">{b.title}</p>
                       <p className="text-xs text-on-surface-variant mt-1 line-clamp-2">{b.detail}</p>
                       <div className="flex items-center gap-2 mt-2">
                         <span
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-workstream-${b.p.workstream.toLowerCase()}/10 text-workstream-${b.p.workstream.toLowerCase()}`}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-workstream-${b.project.workstream.toLowerCase()}/10 text-workstream-${b.project.workstream.toLowerCase()}`}
                         >
-                          {b.p.workstream}
+                          {b.project.workstream}
                         </span>
-                        <span className="text-[11px] text-on-surface-variant">{b.p.name}</span>
+                        <span className="text-[11px] text-on-surface-variant truncate">{b.project.name}</span>
                       </div>
                     </div>
                     <span className="text-[10px] font-bold text-status-critical whitespace-nowrap">{b.ago}</span>
                   </div>
-                  <div className="flex justify-end mt-2">
-                    <Link
-                      to="/portfolio/$projectId"
-                      params={{ projectId: b.p.id }}
-                      className="text-[11px] font-bold text-primary hover:underline"
-                    >
-                      Open project →
-                    </Link>
-                  </div>
-                </div>
+                </Link>
               ))}
             </div>
-          </div>
-
-          <div className="bg-surface-card border border-border-subtle rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary">event_upcoming</span>
-                <h3 className="text-lg font-bold text-on-surface">Upcoming Milestones</h3>
-              </div>
-              <Link to="/roadmap" className="text-xs text-primary font-bold hover:underline">Roadmap →</Link>
-            </div>
-            <ol className="relative border-l border-border-subtle ml-2 space-y-4">
-              {upcoming.map(({ p, t }, i) => (
-                <li key={`${p.id}-${i}`} className="pl-5 relative">
-                  <span
-                    className={`absolute -left-[7px] top-1 w-3 h-3 rounded-full bg-workstream-${p.workstream.toLowerCase()} ring-4 ring-surface-card`}
-                  />
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-[10px] text-on-surface-variant">{t.date}</span>
-                    <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase bg-workstream-${p.workstream.toLowerCase()}/10 text-workstream-${p.workstream.toLowerCase()}`}
-                    >
-                      {p.workstream}
-                    </span>
-                  </div>
-                  <p className="text-sm font-medium text-on-surface mt-1">{t.title}</p>
-                  {t.detail && <p className="text-xs text-on-surface-variant mt-0.5 line-clamp-2">{t.detail}</p>}
-                  <Link
-                    to="/portfolio/$projectId"
-                    params={{ projectId: p.id }}
-                    className="text-[11px] text-primary font-bold hover:underline mt-1 inline-block"
-                  >
-                    {p.name} →
-                  </Link>
-                </li>
-              ))}
-              {upcoming.length === 0 && (
-                <li className="pl-5 text-sm text-on-surface-variant">No upcoming milestones.</li>
-              )}
-            </ol>
-          </div>
-        </section>
-
-        {/* SCM Pulse */}
-        <section className="bg-surface-card border border-border-subtle rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary">campaign</span>
-              <h3 className="text-lg font-bold text-on-surface">Latest from SCM Tech Pulse</h3>
-            </div>
-            <Link to="/newsletter" className="text-xs text-primary font-bold flex items-center gap-1 hover:underline">
-              Open Newsletter <span className="material-symbols-outlined text-sm">arrow_forward</span>
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {newsUpdates.slice(0, 3).map((u) => (
-              <Link
-                key={u.id}
-                to="/newsletter"
-                className="border border-border-subtle rounded-lg p-4 hover:border-primary/50 hover:shadow-sm transition-all block"
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-workstream-${u.workstream.toLowerCase()}/10 text-workstream-${u.workstream.toLowerCase()}`}
-                  >
-                    {u.workstream}
-                  </span>
-                  <span className="text-[11px] text-on-surface-variant">{relativeTime(u.publishedAt)}</span>
-                </div>
-                <p className="font-bold text-sm text-on-surface line-clamp-2">{u.title}</p>
-                <p className="text-xs text-on-surface-variant mt-1 line-clamp-2">{u.summary}</p>
-              </Link>
-            ))}
           </div>
         </section>
       </div>
