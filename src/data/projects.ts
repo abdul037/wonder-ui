@@ -1,6 +1,30 @@
 export type Workstream = "OX" | "EX" | "AU" | "DW";
 export type Priority = "Critical" | "High" | "Medium" | "Low";
 export type Status = "On Track" | "In Progress" | "Blocked" | "Delayed" | "Completed";
+export type TaskType = "Enhancement" | "Bug" | "Discovery" | "Integration" | "Strategic" | "Issue";
+
+export interface Person {
+  name: string;
+  initials: string;
+}
+
+export interface UpdateEntry {
+  text: string;
+  at: string; // ISO timestamp
+}
+
+export interface Task {
+  id: string;
+  name: string;
+  type: TaskType;
+  inSprint: boolean;
+  sprint?: string;
+  status: Status;
+  currentlyWith: Person;
+  techOwner: Person;
+  businessOwner: Person;
+  latestUpdate: UpdateEntry;
+}
 
 export interface Project {
   id: string;
@@ -27,6 +51,13 @@ export interface Project {
   executiveUpdate: string;
   blockers: { title: string; detail: string; ago: string }[];
   timeline: { date: string; title: string; detail?: string; complete?: boolean }[];
+  // SCM Central — phase 1 additions
+  techOwner: Person;
+  businessOwner: Person;
+  currentlyWith: Person;
+  enhancementLog: { date: string; entry: string }[];
+  latestUpdate: UpdateEntry;
+  tasks: Task[];
 }
 
 const avatars = [
