@@ -95,6 +95,14 @@ function TopBar() {
         </div>
       </div>
       <div className="flex items-center gap-4">
+        <Link
+          to="/briefing"
+          title="Open SCM Head briefing — present this hub as a deck"
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-primary text-on-primary hover:opacity-90 shadow-sm"
+        >
+          <Icon name="slideshow" className="!text-[16px]" />
+          Present
+        </Link>
         <button
           onClick={() => setAdminMode(!isAdmin)}
           aria-pressed={isAdmin}
