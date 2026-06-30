@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { projects, workstreamLabel, type Workstream, type Status, type Priority } from "@/data/projects";
+import { projects, workstreamLabel, workstreamFullName, type Workstream, type Status, type Priority } from "@/data/projects";
 import { updates as newsUpdates } from "@/data/newsletter";
 import { relativeTime } from "@/lib/time";
 
@@ -120,6 +120,7 @@ function StatusBar({ counts, total }: { counts: Record<Status, number>; total: n
 function Dashboard() {
   const [range, setRange] = useState<Range>("This Sprint");
   const [activeWs, setActiveWs] = useState<Workstream | "ALL">("ALL");
+  const [avgMode, setAvgMode] = useState<"simple" | "weighted">("simple");
 
   const scoped = activeWs === "ALL" ? projects : projects.filter((p) => p.workstream === activeWs);
   const allTasks = scoped.flatMap((p) => p.tasks);
@@ -133,9 +134,13 @@ function Dashboard() {
     const highPriority = scoped.filter((p) => p.priority === "Critical" || p.priority === "High").length;
     const inSprint = allTasks.filter((t) => t.inSprint).length;
     const activeSprints = new Set(scoped.map((p) => p.sprint).filter(Boolean)).size;
-    const avgProgress = scoped.length
+    const avgProgressSimple = scoped.length
       ? Math.round(scoped.reduce((n, p) => n + p.progress, 0) / scoped.length)
       : 0;
+    const totalWeight = scoped.reduce((n, p) => n + p.tasks.length, 0);
+    const avgProgressWeighted = totalWeight
+      ? Math.round(scoped.reduce((n, p) => n + p.progress * p.tasks.length, 0) / totalWeight)
+      : avgProgressSimple;
 
     const statusCounts = statusOrder.reduce<Record<Status, number>>(
       (acc, s) => {
@@ -182,13 +187,16 @@ function Dashboard() {
       highPriority,
       inSprint,
       activeSprints,
-      avgProgress,
+      avgProgressSimple,
+      avgProgressWeighted,
       statusCounts,
       byWorkstream,
       priorityCounts,
       owners,
     };
   }, [scoped, allTasks]);
+
+  const avgProgress = avgMode === "simple" ? metrics.avgProgressSimple : metrics.avgProgressWeighted;
 
   const upcoming = useMemo(() => {
     return scoped
@@ -232,10 +240,11 @@ function Dashboard() {
         </header>
 
         {/* Workstream filter */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant mr-1">Workstream</span>
           {ALL_WS.map((ws) => {
             const active = activeWs === ws;
-            const label = ws === "ALL" ? "All Workstreams" : workstreamLabel[ws];
+            const label = ws === "ALL" ? "All Workstreams" : workstreamFullName[ws];
             const color = ws === "ALL" ? "primary" : `workstream-${ws.toLowerCase()}`;
             const count =
               ws === "ALL" ? projects.length : projects.filter((p) => p.workstream === ws).length;
@@ -249,8 +258,12 @@ function Dashboard() {
                     : "bg-surface-card border border-border-subtle text-on-surface hover:border-primary"
                 }`}
               >
-                {ws !== "ALL" && <span className={`w-2 h-2 rounded-full ${active ? "bg-white" : `bg-${color}`}`} />}
-                {label}
+                {ws !== "ALL" && (
+                  <span className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded ${active ? "bg-white/20" : `bg-${color}/10 text-${color}`}`}>
+                    {ws}
+                  </span>
+                )}
+                <span>{label}</span>
                 <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${active ? "bg-white/20" : "bg-surface-container"}`}>
                   {count}
                 </span>
@@ -315,23 +328,61 @@ function Dashboard() {
                 <p className="text-xs text-on-surface-variant">Project status distribution · {metrics.total} projects in scope</p>
               </div>
               <div className="text-right">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">Avg Progress</p>
-                <p className="text-2xl font-black text-primary">{metrics.avgProgress}%</p>
+                <div className="flex items-center gap-1 justify-end">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
+                    Avg Project Completion
+                  </p>
+                  <span
+                    className="material-symbols-outlined text-[14px] text-on-surface-variant cursor-help"
+                    title={
+                      avgMode === "simple"
+                        ? "Simple average: mean of each project's % complete in scope. Every project counted equally."
+                        : "Weighted average: each project's % complete weighted by its number of actions. Bigger projects move the needle more."
+                    }
+                  >
+                    info
+                  </span>
+                </div>
+                <p className="text-2xl font-black text-primary font-mono">{avgProgress}%</p>
+                <div className="inline-flex bg-surface-container p-0.5 rounded-md mt-1 text-[10px] font-bold">
+                  {(["simple", "weighted"] as const).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setAvgMode(m)}
+                      className={`px-2 py-0.5 rounded transition-colors ${
+                        avgMode === m ? "bg-surface-card text-primary shadow-sm" : "text-on-surface-variant"
+                      }`}
+                    >
+                      {m === "simple" ? "Simple" : "Weighted"}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
             <StatusBar counts={metrics.statusCounts} total={metrics.total} />
 
             <div className="mt-6 pt-6 border-t border-border-subtle">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant mb-4">
-                By Workstream
-              </p>
-              <div className="space-y-3">
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
+                  Workstream Performance
+                </p>
+                <p className="text-[10px] text-on-surface-variant">progress · open actions · blockers</p>
+              </div>
+              <div className="space-y-4">
                 {metrics.byWorkstream.map((w) => (
                   <div key={w.ws} className="flex items-center gap-4">
-                    <div className="w-28 shrink-0 flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full bg-workstream-${w.ws.toLowerCase()}`} />
-                      <span className="text-xs font-bold text-on-surface">{w.ws}</span>
-                      <span className="text-[10px] text-on-surface-variant">{w.projects}p · {w.actions}a</span>
+                    <div className="w-56 shrink-0 flex items-center gap-2">
+                      <span
+                        className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-workstream-${w.ws.toLowerCase()}/10 text-workstream-${w.ws.toLowerCase()}`}
+                      >
+                        {w.ws}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-on-surface truncate">{workstreamFullName[w.ws]}</p>
+                        <p className="text-[10px] text-on-surface-variant">
+                          {w.projects} projects · {w.actions} actions
+                        </p>
+                      </div>
                     </div>
                     <div className="flex-1 h-2 bg-surface-container rounded-full overflow-hidden">
                       <div
@@ -339,10 +390,14 @@ function Dashboard() {
                         style={{ width: `${w.progress}%` }}
                       />
                     </div>
-                    <span className="text-xs font-mono text-on-surface-variant w-10 text-right">{w.progress}%</span>
-                    {w.blockers > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-status-critical/10 text-status-critical text-[10px] font-bold">
+                    <span className="text-xs font-mono text-on-surface w-10 text-right font-bold">{w.progress}%</span>
+                    {w.blockers > 0 ? (
+                      <span className="px-2 py-0.5 rounded-full bg-status-critical/10 text-status-critical text-[10px] font-bold whitespace-nowrap">
                         {w.blockers} blocked
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full bg-status-low/10 text-status-low text-[10px] font-bold whitespace-nowrap">
+                        clear
                       </span>
                     )}
                   </div>
