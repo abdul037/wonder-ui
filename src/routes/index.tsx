@@ -133,13 +133,6 @@ function Dashboard() {
     const highPriority = scoped.filter((p) => p.priority === "Critical" || p.priority === "High").length;
     const inSprint = allTasks.filter((t) => t.inSprint).length;
     const activeSprints = new Set(scoped.map((p) => p.sprint).filter(Boolean)).size;
-    const avgProgressSimple = scoped.length
-      ? Math.round(scoped.reduce((n, p) => n + p.progress, 0) / scoped.length)
-      : 0;
-    const totalWeight = scoped.reduce((n, p) => n + p.tasks.length, 0);
-    const avgProgressWeighted = totalWeight
-      ? Math.round(scoped.reduce((n, p) => n + p.progress * p.tasks.length, 0) / totalWeight)
-      : avgProgressSimple;
 
     const statusCounts = statusOrder.reduce<Record<Status, number>>(
       (acc, s) => {
@@ -156,7 +149,6 @@ function Dashboard() {
         ws,
         projects: ps.length,
         actions: tasks.length,
-        progress: ps.length ? Math.round(ps.reduce((n, p) => n + p.progress, 0) / ps.length) : 0,
         blockers: ps.filter((p) => p.status === "Blocked").length,
       };
     });
@@ -186,8 +178,6 @@ function Dashboard() {
       highPriority,
       inSprint,
       activeSprints,
-      avgProgressSimple,
-      avgProgressWeighted,
       statusCounts,
       byWorkstream,
       priorityCounts,
