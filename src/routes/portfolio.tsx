@@ -665,3 +665,88 @@ function OwnerCell({ label, person }: { label: string; person: Person }) {
     </div>
   );
 }
+
+function TaskDrilldown({
+  project,
+  isAdmin,
+  onEditTask,
+  onAddTask,
+  compact = false,
+}: {
+  project: Project;
+  isAdmin: boolean;
+  onEditTask: (project: Project, task: Task) => void;
+  onAddTask: (project: Project) => void;
+  compact?: boolean;
+}) {
+  const tasks = project.tasks;
+  return (
+    <div className="rounded-lg border border-border-subtle bg-surface-card overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 bg-surface-container-low border-b border-border-subtle">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-on-surface-variant">
+          Tasks · {tasks.length}
+        </p>
+        {isAdmin && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onAddTask(project);
+            }}
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:bg-primary/10 rounded px-2 py-0.5"
+          >
+            <span className="material-symbols-outlined !text-[14px]">add</span>
+            Add task
+          </button>
+        )}
+      </div>
+      {tasks.length === 0 ? (
+        <p className="text-xs text-on-surface-variant px-3 py-4">No tasks yet.</p>
+      ) : (
+        <div className="divide-y divide-border-subtle">
+          {tasks.map((t) => (
+            <div
+              key={t.id}
+              className="flex items-center gap-3 px-3 py-2 hover:bg-surface-container-lowest"
+            >
+              <span className="font-mono text-[10px] text-on-surface-variant w-20 shrink-0 truncate">
+                {t.id}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-on-surface truncate">{t.name}</p>
+                {!compact && (
+                  <p className="text-[10px] text-on-surface-variant truncate">
+                    {t.latestUpdate?.text}
+                  </p>
+                )}
+              </div>
+              <StatusPill s={t.status} />
+              <SprintPill task={t} />
+              {!compact && (
+                <div className="flex items-center gap-1 w-28 shrink-0">
+                  <Avatar person={t.currentlyWith} size={18} />
+                  <span className="text-[10px] text-on-surface-variant truncate">
+                    {t.currentlyWith.name}
+                  </span>
+                </div>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onEditTask(project, t);
+                  }}
+                  title="Edit task"
+                  className="text-primary hover:bg-primary/10 rounded p-1"
+                >
+                  <span className="material-symbols-outlined !text-[16px]">edit</span>
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
