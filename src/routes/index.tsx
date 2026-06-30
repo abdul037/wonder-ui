@@ -145,10 +145,18 @@ function Dashboard() {
     const byWorkstream = (["OX", "EX", "AU", "DW"] as Workstream[]).map((ws) => {
       const ps = projects.filter((p) => p.workstream === ws);
       const tasks = ps.flatMap((p) => p.tasks);
+      const statusCounts = statusOrder.reduce<Record<Status, number>>(
+        (acc, s) => {
+          acc[s] = ps.filter((p) => p.status === s).length;
+          return acc;
+        },
+        { "On Track": 0, "In Progress": 0, Blocked: 0, Delayed: 0, Completed: 0 }
+      );
       return {
         ws,
         projects: ps.length,
         actions: tasks.length,
+        statusCounts,
         blockers: ps.filter((p) => p.status === "Blocked").length,
       };
     });
