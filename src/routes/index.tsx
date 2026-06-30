@@ -548,10 +548,10 @@ function Dashboard() {
               <span className="text-[11px] text-on-surface-variant">
                 Across {categories.total} actions · {scoped.length} project{scoped.length === 1 ? "" : "s"}
               </span>
-              {(filters.taskStatus || filters.effort || filters.issuePriority || filters.release) && (
+              {hasAnyFilter && (
                 <button
                   onClick={() =>
-                    setFilters({ taskStatus: null, effort: null, issuePriority: null, release: null })
+                    setFilters({ taskStatus: [], effort: [], issuePriority: [], release: [] })
                   }
                   className="text-[11px] font-bold text-primary hover:underline"
                 >
@@ -564,7 +564,7 @@ function Dashboard() {
             <CategoryCard
               title="Task Status"
               icon="task_alt"
-              activeKey={filters.taskStatus}
+              activeKeys={filters.taskStatus}
               onToggle={toggle("taskStatus")}
               items={[
                 { label: "Closed", value: categories.taskStatus.Closed, color: "status-low" },
@@ -576,7 +576,7 @@ function Dashboard() {
             <CategoryCard
               title="Effort"
               icon="bolt"
-              activeKey={filters.effort}
+              activeKeys={filters.effort}
               onToggle={toggle("effort")}
               items={[
                 { label: "Low", value: categories.effort.Low, color: "status-low" },
@@ -587,7 +587,7 @@ function Dashboard() {
             <CategoryCard
               title="Issue Priority"
               icon="priority_high"
-              activeKey={filters.issuePriority}
+              activeKeys={filters.issuePriority}
               onToggle={toggle("issuePriority")}
               items={[
                 { label: "P1", value: categories.issuePriority.P1, color: "status-critical" },
@@ -598,7 +598,7 @@ function Dashboard() {
             <CategoryCard
               title="Product Release Mode"
               icon="rocket_launch"
-              activeKey={filters.release}
+              activeKeys={filters.release}
               onToggle={toggle("release")}
               items={[
                 { label: "Web App", value: categories.release["Web App"], color: "primary" },
