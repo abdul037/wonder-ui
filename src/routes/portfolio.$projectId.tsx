@@ -11,9 +11,9 @@ export const Route = createFileRoute("/portfolio/$projectId")({
   },
   head: ({ loaderData }) => ({
     meta: [
-      { title: `${loaderData?.name ?? "Project"} | PMO Command Center` },
+      { title: `${loaderData?.name ?? "Project"} | Supply Chain Tech Hub` },
       { name: "description", content: loaderData?.summary ?? "Project detail view." },
-      { property: "og:title", content: `${loaderData?.name ?? "Project"} | PMO Command Center` },
+      { property: "og:title", content: `${loaderData?.name ?? "Project"} | Supply Chain Tech Hub` },
       { property: "og:description", content: loaderData?.summary ?? "Project detail view." },
     ],
   }),

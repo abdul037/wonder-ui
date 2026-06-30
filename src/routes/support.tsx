@@ -4,8 +4,8 @@ import { AppShell } from "@/components/AppShell";
 export const Route = createFileRoute("/support")({
   head: () => ({
     meta: [
-      { title: "Support | PMO Command Center" },
-      { name: "description", content: "Documentation, help articles, and contact options for PMO Command Center." },
+      { title: "Support | Supply Chain Tech Hub" },
+      { name: "description", content: "Documentation, help articles, and contact options for Supply Chain Tech Hub." },
     ],
   }),
   component: SupportPage,

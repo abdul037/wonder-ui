@@ -6,12 +6,12 @@ import { projects, workstreamLabel, type Workstream } from "@/data/projects";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Executive Dashboard | PMO Command Center" },
+      { title: "Executive Dashboard | Supply Chain Tech Hub" },
       {
         name: "description",
         content: "Real-time performance metrics across strategic workstreams: portfolio health, sprint load, blockers, and milestones.",
       },
-      { property: "og:title", content: "Executive Dashboard | PMO Command Center" },
+      { property: "og:title", content: "Executive Dashboard | Supply Chain Tech Hub" },
       { property: "og:description", content: "Executive oversight of portfolio health, sprint load, and blockers." },
     ],
   }),

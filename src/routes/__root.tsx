@@ -77,10 +77,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "PMO Command Center" },
+      { title: "Supply Chain Tech Hub" },
       { name: "description", content: "Strategic project management dashboard for executive oversight across workstreams." },
       { name: "author", content: "PMO Command" },
-      { property: "og:title", content: "PMO Command Center" },
+      { property: "og:title", content: "Supply Chain Tech Hub" },
       { property: "og:description", content: "Strategic project management dashboard for executive oversight across workstreams." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -13,7 +13,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * PMO Command Center — Executive Command theme.
+ * Supply Chain Tech Hub — Executive Command theme.
  * Tokens mirror the Stitch mock variables so utility classes like
  * `bg-primary`, `text-on-surface`, `bg-workstream-ox`, `bg-status-critical`
  * resolve to the right colors across all pages.
@@ -127,5 +127,12 @@ html.dark {
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background: var(--color-surface-container-high);
     border-radius: 9999px;
+  }
+  .card-hover-effect {
+    transition: box-shadow 150ms ease, transform 150ms ease;
+  }
+  .card-hover-effect:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    transform: translateY(-1px);
   }
 }
