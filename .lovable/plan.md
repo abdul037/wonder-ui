@@ -1,24 +1,45 @@
-## Remove all progress percentages from the dashboard
+## Dashboard Redesign (match attached reference)
 
-### Goal
-Strip every progress percentage indicator from the dashboard so the page feels cleaner and avoids the confusion the user flagged around "Avg Project Completion".
+Rework `src/routes/index.tsx` so the dashboard mirrors the reference screenshot's layout and visual language, while keeping our Supply Chain Tech Hub data model and workstreams (OX, EX, AU, DW with full names).
 
-### Scope
-- Remove the top-level **"Avg Project Completion"** KPI tile and its Simple/Weighted toggle from the KPI grid.
-- Remove the circular/arc progress dials and percentage labels next to each workstream in the **By Workstream** row.
-- Keep the workstream names (Operation Excellence, Employee Experience, Asset Utilization, Data Warehouse / PowerBI) and their project/action counts visible.
-- Leave all other dashboard panels untouched (KPI tiles, Portfolio Health, Priority Mix, Live Actions, Owner Workload, Critical Blockers, Milestones, SCM Pulse).
+### 1. Header row
+- Title "Executive Overview" + subtitle "Real-time performance metrics across strategic workstreams."
+- Right side: segmented control with Daily / Weekly / Monthly tabs (visual only, Daily active).
 
-### Files to edit
-- `src/routes/index.tsx` — the main dashboard component. Identify the "Avg Project Completion" KPI card and the By-Workstream progress dials, then remove/rework those JSX blocks.
-- `src/styles.css` — optionally clean up any utility classes that were added only for the progress dials or toggle if they become orphaned.
+### 2. KPI strip — 6 white cards in one row
+Each card: small uppercase label, large numeric value, and a tiny visual flourish (sparkline / bars / zigzag / progress sliver). Cards, in order:
+1. Total Major Projects — count of all projects (faint sine sparkline).
+2. Total Actions — sum of tasks across projects (rising line).
+3. In Current Sprint — actions whose status is "In Progress" (mini bar trio).
+4. Open Blockers — Blocked projects + tasks; red left border + red zigzag; "+N this week" caption.
+5. High Priority — High priority tasks; orange numeric + thin orange progress sliver.
+6. Avg. Delivery — placeholder static "14d" with "Efficiency 92% Q4 Target" caption (no % calc beyond this label).
 
-### How
-- In the KPI grid, delete the tile that renders the average completion value and the Simple/Weighted toggle. Re-balance the grid from 6 to 5 tiles if needed, or let the remaining tiles reflow.
-- In the By Workstream row, replace the circular dial + percentage with a simpler horizontal card that still shows full workstream name, status, and project/action counts.
-- Verify build passes and no unused imports/variables remain after the deletion.
+All sparkline visuals are pure inline SVG; no chart lib, no real progress percentages elsewhere.
 
-### Out of scope
-- No changes to data model or calculations in `src/data/projects.ts`.
-- No changes to other routes (portfolio, sprint board, newsletter, admin, etc.).
-- No redesign of the Gulf Cryo branding yet (that is a later phase).
+### 3. Portfolio Distribution filter row
+- Section title "Portfolio Distribution" + "Advanced Filters" link on the right.
+- Pill chips: All Workstreams (active, indigo filled), Operation Excellence (OX), Employee Experience (EX), Asset Utilization (AU), Data Warehouse / PowerBI (DW). Each chip shows a colored dot + name + count badge.
+
+### 4. Project cards grid (3 columns)
+For each project in scope, render a card with:
+- Two top tags: `WORKSTREAM: <code>` (workstream color) + priority badge.
+- Title (project name) + 2-line description.
+- Phase label + status pill (e.g. "Development Progress", "UAT Testing", "Discovery Phase") — derived from project status, NO % bar (replaced with a thin status-color accent line per our prior "remove progress" rule).
+- Footer row: stacked owner avatars (initials bubbles) + a meta chip (sprint tag / days-left / workstream tag).
+- Bottom strip: small tech icons (Material Symbols) on the left, "View Details" button linking to `/portfolio/$projectId` on the right.
+
+### 5. Bottom row (matches reference's partial cards)
+- Left/middle: continuation of project cards (Global Expansion etc.) + a "Key Milestones" card listing upcoming milestones with check icons.
+- Right: red-tinted "Critical Blockers" card listing blocked items.
+
+### 6. Visual system
+- Background: light surface; cards: white with subtle border + soft shadow on hover.
+- Keep semantic tokens from `src/styles.css` (workstream-ox/ex/au/dw, status-*). No hardcoded hex.
+- Replace prior "Workstream Status Breakdown / Owner Workload / Action Status Mix" sections with this reference layout. Per existing memory rule, no percentage progress bars — phase rows use status pills instead of filled `%` bars.
+
+### Files touched
+- `src/routes/index.tsx` — full rewrite of the Dashboard component.
+- `src/styles.css` — only if a new utility (e.g. `.kpi-card`) is needed; otherwise untouched.
+
+No data model, routing, or other page changes.
