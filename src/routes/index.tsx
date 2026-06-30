@@ -517,30 +517,26 @@ function Dashboard() {
             </div>
             <p className="text-xs text-on-surface-variant mb-4">Top owners by open actions</p>
             <div className="space-y-3">
-              {metrics.owners.map((o) => {
-                const max = metrics.owners[0]?.actions || 1;
-                return (
-                  <div key={o.name} className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center text-[11px] font-bold shrink-0">
-                      {o.initials}
+              {metrics.owners.map((o) => (
+                <div key={o.name} className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center text-[11px] font-bold shrink-0">
+                    {o.initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-medium text-on-surface truncate">{o.name}</span>
+                      <span className="font-bold text-on-surface">{o.actions}</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-on-surface truncate">{o.name}</span>
-                        <span className="font-bold text-on-surface">{o.actions}</span>
-                      </div>
-                      <div className="h-1.5 bg-surface-container rounded-full overflow-hidden mt-1">
-                        <div className="h-full bg-primary" style={{ width: `${(o.actions / max) * 100}%` }} />
-                      </div>
-                      {o.blocked > 0 && (
-                        <p className="text-[10px] text-status-critical font-bold mt-1">
-                          {o.blocked} blocked
-                        </p>
-                      )}
+                    <div className="flex flex-wrap gap-1">
+                      {statusOrder.map((s) => {
+                        const count = o.statusCounts[s];
+                        if (!count) return null;
+                        return <StatusMini key={s} status={s} count={count} />;
+                      })}
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           </div>
         </section>
