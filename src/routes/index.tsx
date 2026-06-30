@@ -116,16 +116,17 @@ function CategoryCard({
   title,
   icon,
   items,
-  activeKey,
+  activeKeys,
   onToggle,
 }: {
   title: string;
   icon: string;
   items: { label: string; value: number; color: string }[];
-  activeKey?: string | null;
+  activeKeys?: string[];
   onToggle?: (label: string) => void;
 }) {
   const total = items.reduce((s, i) => s + i.value, 0) || 1;
+  const hasActive = (activeKeys?.length ?? 0) > 0;
   return (
     <div className="bg-surface-card rounded-xl border border-border-subtle shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -133,9 +134,9 @@ function CategoryCard({
           <span className="material-symbols-outlined text-[16px] text-on-surface-variant">{icon}</span>
           <h3 className="text-xs font-bold uppercase tracking-wide text-on-surface">{title}</h3>
         </div>
-        {activeKey ? (
+        {hasActive ? (
           <button
-            onClick={() => onToggle?.(activeKey)}
+            onClick={() => activeKeys!.forEach((k) => onToggle?.(k))}
             className="text-[10px] font-bold text-primary hover:underline"
           >
             Clear
@@ -147,8 +148,8 @@ function CategoryCard({
       <div className="space-y-2">
         {items.map((it) => {
           const pct = Math.round((it.value / total) * 100);
-          const isActive = activeKey === it.label;
-          const dimmed = activeKey && !isActive;
+          const isActive = activeKeys?.includes(it.label) ?? false;
+          const dimmed = hasActive && !isActive;
           return (
             <button
               key={it.label}
@@ -162,7 +163,15 @@ function CategoryCard({
             >
               <div className="flex items-center justify-between text-[11px] mb-1">
                 <div className="flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full bg-${it.color}`} />
+                  <span
+                    className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${
+                      isActive ? `bg-${it.color} border-${it.color}` : "border-border-subtle"
+                    }`}
+                  >
+                    {isActive && (
+                      <span className="material-symbols-outlined text-[10px] text-white leading-none">check</span>
+                    )}
+                  </span>
                   <span className={`font-medium ${isActive ? `text-${it.color}` : "text-on-surface"}`}>{it.label}</span>
                 </div>
                 <span className="font-mono text-on-surface-variant">
@@ -299,14 +308,19 @@ function Dashboard() {
   const [range, setRange] = useState<Range>("Daily");
   const [activeWs, setActiveWs] = useState<Workstream | "ALL">("ALL");
   const [filters, setFilters] = useState<{
-    taskStatus: string | null;
-    effort: string | null;
-    issuePriority: string | null;
-    release: string | null;
-  }>({ taskStatus: null, effort: null, issuePriority: null, release: null });
+    taskStatus: string[];
+    effort: string[];
+    issuePriority: string[];
+    release: string[];
+  }>({ taskStatus: [], effort: [], issuePriority: [], release: [] });
 
   const toggle = (key: keyof typeof filters) => (label: string) =>
-    setFilters((f) => ({ ...f, [key]: f[key] === label ? null : label }));
+    setFilters((f) => ({
+      ...f,
+      [key]: f[key].includes(label) ? f[key].filter((l) => l !== label) : [...f[key], label],
+    }));
+  const hasAnyFilter =
+    filters.taskStatus.length + filters.effort.length + filters.issuePriority.length + filters.release.length > 0;
 
   const metrics = useMemo(() => {
     const allTasks = projects.flatMap((p) => p.tasks);
@@ -352,23 +366,36 @@ function Dashboard() {
     return map;
   }, []);
 
+  const taskMatches = (t: { id: string }) => {
+    const a = taskAttrs.get(t.id);
+    if (!a) return false;
+    return (
+      (filters.taskStatus.length === 0 || filters.taskStatus.includes(a.taskStatus)) &&
+      (filters.effort.length === 0 || filters.effort.includes(a.effort)) &&
+      (filters.issuePriority.length === 0 || filters.issuePriority.includes(a.issuePriority)) &&
+      (filters.release.length === 0 || filters.release.includes(a.release))
+    );
+  };
+
   // Filter project list by workstream + categorical filters (project must have at least one matching task)
   const scoped = useMemo(() => {
     const wsFiltered = activeWs === "ALL" ? projects : projects.filter((p) => p.workstream === activeWs);
-    const hasCatFilter = Object.values(filters).some(Boolean);
-    if (!hasCatFilter) return wsFiltered;
-    return wsFiltered.filter((p) =>
-      p.tasks.some((t) => {
-        const a = taskAttrs.get(t.id);
-        if (!a) return false;
-        return (
-          (!filters.taskStatus || a.taskStatus === filters.taskStatus) &&
-          (!filters.effort || a.effort === filters.effort) &&
-          (!filters.issuePriority || a.issuePriority === filters.issuePriority) &&
-          (!filters.release || a.release === filters.release)
-        );
+    if (!hasAnyFilter) return wsFiltered;
+    return wsFiltered.filter((p) => p.tasks.some(taskMatches));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeWs, filters, taskAttrs]);
+
+  // Matching actions (tasks) within the workstream scope
+  const scopedActions = useMemo(() => {
+    const wsFiltered = activeWs === "ALL" ? projects : projects.filter((p) => p.workstream === activeWs);
+    const result: { project: Project; task: Project["tasks"][number]; attrs: ReturnType<typeof taskAttrs.get> }[] = [];
+    wsFiltered.forEach((p) =>
+      p.tasks.forEach((t) => {
+        if (taskMatches(t)) result.push({ project: p, task: t, attrs: taskAttrs.get(t.id) });
       })
     );
+    return result;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeWs, filters, taskAttrs]);
 
   // Categorical breakdowns — counted against current scope (excluding own filter for context)
@@ -521,10 +548,10 @@ function Dashboard() {
               <span className="text-[11px] text-on-surface-variant">
                 Across {categories.total} actions · {scoped.length} project{scoped.length === 1 ? "" : "s"}
               </span>
-              {(filters.taskStatus || filters.effort || filters.issuePriority || filters.release) && (
+              {hasAnyFilter && (
                 <button
                   onClick={() =>
-                    setFilters({ taskStatus: null, effort: null, issuePriority: null, release: null })
+                    setFilters({ taskStatus: [], effort: [], issuePriority: [], release: [] })
                   }
                   className="text-[11px] font-bold text-primary hover:underline"
                 >
@@ -537,7 +564,7 @@ function Dashboard() {
             <CategoryCard
               title="Task Status"
               icon="task_alt"
-              activeKey={filters.taskStatus}
+              activeKeys={filters.taskStatus}
               onToggle={toggle("taskStatus")}
               items={[
                 { label: "Closed", value: categories.taskStatus.Closed, color: "status-low" },
@@ -549,7 +576,7 @@ function Dashboard() {
             <CategoryCard
               title="Effort"
               icon="bolt"
-              activeKey={filters.effort}
+              activeKeys={filters.effort}
               onToggle={toggle("effort")}
               items={[
                 { label: "Low", value: categories.effort.Low, color: "status-low" },
@@ -560,7 +587,7 @@ function Dashboard() {
             <CategoryCard
               title="Issue Priority"
               icon="priority_high"
-              activeKey={filters.issuePriority}
+              activeKeys={filters.issuePriority}
               onToggle={toggle("issuePriority")}
               items={[
                 { label: "P1", value: categories.issuePriority.P1, color: "status-critical" },
@@ -571,7 +598,7 @@ function Dashboard() {
             <CategoryCard
               title="Product Release Mode"
               icon="rocket_launch"
-              activeKey={filters.release}
+              activeKeys={filters.release}
               onToggle={toggle("release")}
               items={[
                 { label: "Web App", value: categories.release["Web App"], color: "primary" },
@@ -582,15 +609,129 @@ function Dashboard() {
         </section>
 
         {/* Project cards grid */}
-        <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {scoped.length === 0 && (
-            <div className="md:col-span-2 xl:col-span-3 bg-surface-card border border-dashed border-border-subtle rounded-xl p-8 text-center text-sm text-on-surface-variant">
-              No projects match the current filters.
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-on-surface">
+              Projects <span className="text-on-surface-variant font-mono font-normal text-xs ml-1">({scoped.length})</span>
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {scoped.length === 0 && (
+              <div className="md:col-span-2 xl:col-span-3 bg-surface-card border border-dashed border-border-subtle rounded-xl p-8 text-center text-sm text-on-surface-variant">
+                No projects match the current filters.
+              </div>
+            )}
+            {scoped.map((p) => (
+              <ProjectCard key={p.id} project={p} />
+            ))}
+          </div>
+        </section>
+
+        {/* Matching Actions (tasks) */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-on-surface">
+              Actions <span className="text-on-surface-variant font-mono font-normal text-xs ml-1">({scopedActions.length})</span>
+            </h2>
+            <span className="text-[11px] text-on-surface-variant">
+              {hasAnyFilter ? "Filtered by current criteria" : "All actions in scope"}
+            </span>
+          </div>
+          <div className="bg-surface-card rounded-xl border border-border-subtle shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-surface-container text-on-surface-variant text-[10px] uppercase tracking-wider">
+                    <th className="text-left font-bold px-4 py-2.5">Action</th>
+                    <th className="text-left font-bold px-3 py-2.5">Project</th>
+                    <th className="text-left font-bold px-3 py-2.5">WS</th>
+                    <th className="text-left font-bold px-3 py-2.5">Status</th>
+                    <th className="text-left font-bold px-3 py-2.5">Effort</th>
+                    <th className="text-left font-bold px-3 py-2.5">Priority</th>
+                    <th className="text-left font-bold px-3 py-2.5">Release</th>
+                    <th className="text-left font-bold px-3 py-2.5">Owner</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {scopedActions.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="px-4 py-6 text-center text-on-surface-variant">
+                        No actions match the current filters.
+                      </td>
+                    </tr>
+                  )}
+                  {scopedActions.map(({ project, task, attrs }) => {
+                    const statusColor =
+                      attrs?.taskStatus === "Closed"
+                        ? "status-low"
+                        : attrs?.taskStatus === "In Progress"
+                        ? "primary"
+                        : attrs?.taskStatus === "On Hold"
+                        ? "status-critical"
+                        : "status-medium";
+                    const effortColor =
+                      attrs?.effort === "High" ? "status-critical" : attrs?.effort === "Medium" ? "status-medium" : "status-low";
+                    const priColor =
+                      attrs?.issuePriority === "P1" ? "status-critical" : attrs?.issuePriority === "P2" ? "status-high" : "status-medium";
+                    const relColor = attrs?.release === "Web App" ? "primary" : "workstream-au";
+                    return (
+                      <tr key={task.id} className="border-t border-border-subtle hover:bg-surface-container/50">
+                        <td className="px-4 py-2.5">
+                          <div className="font-medium text-on-surface">{task.name}</div>
+                          <div className="font-mono text-[10px] text-on-surface-variant">{task.id}</div>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <Link
+                            to="/portfolio/$projectId"
+                            params={{ projectId: project.id }}
+                            className="text-on-surface hover:text-primary truncate"
+                          >
+                            {project.name}
+                          </Link>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-bold bg-workstream-${project.workstream.toLowerCase()}/10 text-workstream-${project.workstream.toLowerCase()}`}
+                          >
+                            {project.workstream}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-${statusColor}/10 text-${statusColor}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full bg-${statusColor}`} />
+                            {attrs?.taskStatus}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold bg-${effortColor}/10 text-${effortColor}`}>
+                            {attrs?.effort}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold bg-${priColor}/10 text-${priColor}`}>
+                            {attrs?.issuePriority}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold bg-${relColor}/10 text-${relColor}`}>
+                            {attrs?.release}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center text-[9px] font-bold">
+                              {task.currentlyWith.initials}
+                            </span>
+                            <span className="text-on-surface-variant text-[11px]">{task.currentlyWith.name}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          )}
-          {scoped.map((p) => (
-            <ProjectCard key={p.id} project={p} />
-          ))}
+          </div>
         </section>
 
         {/* Bottom row — Key Milestones + Critical Blockers */}
