@@ -83,7 +83,7 @@ function KpiCard({
   critical,
   valueClass,
 }: {
-  label: string;
+  label: React.ReactNode;
   value: string | number;
   caption?: React.ReactNode;
   sparkline: { kind: "sine" | "rise" | "bars" | "zigzag" | "sliver"; color: string };
@@ -290,7 +290,7 @@ function Dashboard() {
         {/* KPI strip — 6 cards */}
         <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <KpiCard
-            label={<>Total Major<br />Projects</> as unknown as string}
+            label={<>Total Major<br />Projects</>}
             value={metrics.totalProjects}
             sparkline={{ kind: "sine", color: "primary" }}
           />
@@ -300,12 +300,12 @@ function Dashboard() {
             sparkline={{ kind: "rise", color: "status-low" }}
           />
           <KpiCard
-            label={<>In Current<br />Sprint</> as unknown as string}
+            label={<>In Current<br />Sprint</>}
             value={metrics.inSprint}
             sparkline={{ kind: "bars", color: "primary" }}
           />
           <KpiCard
-            label={<>Open<br />Blockers</> as unknown as string}
+            label={<>Open<br />Blockers</>}
             value={metrics.blocked}
             color="status-critical"
             critical
