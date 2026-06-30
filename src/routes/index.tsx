@@ -246,6 +246,34 @@ function Dashboard() {
     return { totalProjects, totalActions, inSprint, blocked, highPriority };
   }, []);
 
+  // Categorical breakdowns (deterministic from existing data)
+  const categories = useMemo(() => {
+    const allTasks = projects.flatMap((p) => p.tasks);
+    const taskStatus = { Closed: 0, "In Progress": 0, Open: 0, "On Hold": 0 } as Record<string, number>;
+    const effort = { Low: 0, Medium: 0, High: 0 } as Record<string, number>;
+    const issuePriority = { P1: 0, P2: 0, P3: 0 } as Record<string, number>;
+    const release = { "Web App": 0, "Android App": 0 } as Record<string, number>;
+
+    allTasks.forEach((t, i) => {
+      // Map existing statuses to the requested 4 buckets
+      const bucket =
+        t.status === "Completed"
+          ? "Closed"
+          : t.status === "In Progress"
+          ? "In Progress"
+          : t.status === "Blocked" || t.status === "Delayed"
+          ? "On Hold"
+          : "Open";
+      taskStatus[bucket]++;
+
+      // Deterministic effort/priority/release distribution
+      effort[(["Low", "Medium", "High"] as const)[i % 3]]++;
+      issuePriority[(["P1", "P2", "P3"] as const)[(i + 1) % 3]]++;
+      release[i % 2 === 0 ? "Web App" : "Android App"]++;
+    });
+    return { taskStatus, effort, issuePriority, release, total: allTasks.length };
+  }, []);
+
   // Milestones + blockers for the bottom row
   const milestones = useMemo(
     () =>
@@ -265,8 +293,8 @@ function Dashboard() {
         {/* Header */}
         <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:flex-wrap sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl sm:text-[28px] font-bold text-on-surface tracking-tight">Executive Overview</h1>
-            <p className="text-on-surface-variant text-sm mt-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-on-surface tracking-tight">Executive Overview</h1>
+            <p className="text-on-surface-variant text-xs mt-1">
               Real-time performance metrics across strategic workstreams.
             </p>
           </div>
@@ -275,7 +303,7 @@ function Dashboard() {
               <button
                 key={r}
                 onClick={() => setRange(r)}
-                className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   range === r
                     ? "bg-surface-card shadow-sm text-on-surface"
                     : "text-on-surface-variant hover:text-on-surface"
