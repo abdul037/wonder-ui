@@ -308,14 +308,19 @@ function Dashboard() {
   const [range, setRange] = useState<Range>("Daily");
   const [activeWs, setActiveWs] = useState<Workstream | "ALL">("ALL");
   const [filters, setFilters] = useState<{
-    taskStatus: string | null;
-    effort: string | null;
-    issuePriority: string | null;
-    release: string | null;
-  }>({ taskStatus: null, effort: null, issuePriority: null, release: null });
+    taskStatus: string[];
+    effort: string[];
+    issuePriority: string[];
+    release: string[];
+  }>({ taskStatus: [], effort: [], issuePriority: [], release: [] });
 
   const toggle = (key: keyof typeof filters) => (label: string) =>
-    setFilters((f) => ({ ...f, [key]: f[key] === label ? null : label }));
+    setFilters((f) => ({
+      ...f,
+      [key]: f[key].includes(label) ? f[key].filter((l) => l !== label) : [...f[key], label],
+    }));
+  const hasAnyFilter =
+    filters.taskStatus.length + filters.effort.length + filters.issuePriority.length + filters.release.length > 0;
 
   const metrics = useMemo(() => {
     const allTasks = projects.flatMap((p) => p.tasks);
@@ -361,23 +366,37 @@ function Dashboard() {
     return map;
   }, []);
 
+  const taskMatches = (t: { id: string }) => {
+    const a = taskAttrs.get(t.id);
+    if (!a) return false;
+    return (
+      (filters.taskStatus.length === 0 || filters.taskStatus.includes(a.taskStatus)) &&
+      (filters.effort.length === 0 || filters.effort.includes(a.effort)) &&
+      (filters.issuePriority.length === 0 || filters.issuePriority.includes(a.issuePriority)) &&
+      (filters.release.length === 0 || filters.release.includes(a.release))
+    );
+  };
+
   // Filter project list by workstream + categorical filters (project must have at least one matching task)
   const scoped = useMemo(() => {
     const wsFiltered = activeWs === "ALL" ? projects : projects.filter((p) => p.workstream === activeWs);
-    const hasCatFilter = Object.values(filters).some(Boolean);
-    if (!hasCatFilter) return wsFiltered;
-    return wsFiltered.filter((p) =>
-      p.tasks.some((t) => {
-        const a = taskAttrs.get(t.id);
-        if (!a) return false;
-        return (
-          (!filters.taskStatus || a.taskStatus === filters.taskStatus) &&
-          (!filters.effort || a.effort === filters.effort) &&
-          (!filters.issuePriority || a.issuePriority === filters.issuePriority) &&
-          (!filters.release || a.release === filters.release)
-        );
+    if (!hasAnyFilter) return wsFiltered;
+    return wsFiltered.filter((p) => p.tasks.some(taskMatches));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeWs, filters, taskAttrs]);
+
+  // Matching actions (tasks) within the workstream scope
+  const scopedActions = useMemo(() => {
+    const wsFiltered = activeWs === "ALL" ? projects : projects.filter((p) => p.workstream === activeWs);
+    const result: { project: Project; task: Project["tasks"][number]; attrs: ReturnType<typeof taskAttrs.get> }[] = [];
+    wsFiltered.forEach((p) =>
+      p.tasks.forEach((t) => {
+        if (taskMatches(t)) result.push({ project: p, task: t, attrs: taskAttrs.get(t.id) });
       })
     );
+    return result;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeWs, filters, taskAttrs]);
   }, [activeWs, filters, taskAttrs]);
 
   // Categorical breakdowns — counted against current scope (excluding own filter for context)
