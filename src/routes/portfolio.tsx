@@ -443,7 +443,8 @@ function ProjectsGrid({ rows, isAdmin, onEdit }: { rows: Project[]; isAdmin: boo
                 <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
               </span>
             </div>
-          </Link>
+            </Link>
+          </div>
         );
       })}
     </div>
