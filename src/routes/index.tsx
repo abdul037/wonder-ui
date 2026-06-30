@@ -397,7 +397,6 @@ function Dashboard() {
     return result;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeWs, filters, taskAttrs]);
-  }, [activeWs, filters, taskAttrs]);
 
   // Categorical breakdowns — counted against current scope (excluding own filter for context)
   const categories = useMemo(() => {
