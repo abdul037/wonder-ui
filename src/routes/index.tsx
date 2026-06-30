@@ -397,23 +397,46 @@ function Dashboard() {
     return { totalProjects, totalActions, inSprint, blocked, highPriority };
   }, [scoped, scopedActions]);
 
-  // Categorical breakdowns — counted against current scope (excluding own filter for context)
+  // Categorical breakdowns — for each card, count tasks matching every OTHER active filter
+  // (excluding the card's own filter) so users can still see and toggle siblings within it.
   const categories = useMemo(() => {
-    const allTasks = scoped.flatMap((p) => p.tasks);
+    const wsTasks =
+      activeWs === "ALL"
+        ? projects.flatMap((p) => p.tasks)
+        : projects.filter((p) => p.workstream === activeWs).flatMap((p) => p.tasks);
+
+    const matchExcept = (exclude: keyof typeof filters) => (taskId: string) => {
+      const a = taskAttrs.get(taskId);
+      if (!a) return false;
+      if (exclude !== "taskStatus" && filters.taskStatus.length && !filters.taskStatus.includes(a.taskStatus)) return false;
+      if (exclude !== "effort" && filters.effort.length && !filters.effort.includes(a.effort)) return false;
+      if (exclude !== "issuePriority" && filters.issuePriority.length && !filters.issuePriority.includes(a.issuePriority)) return false;
+      if (exclude !== "release" && filters.release.length && !filters.release.includes(a.release)) return false;
+      return true;
+    };
+
     const taskStatus = { Closed: 0, "In Progress": 0, Open: 0, "On Hold": 0 } as Record<string, number>;
     const effort = { Low: 0, Medium: 0, High: 0 } as Record<string, number>;
     const issuePriority = { P1: 0, P2: 0, P3: 0 } as Record<string, number>;
     const release = { "Web App": 0, "Android App": 0 } as Record<string, number>;
-    allTasks.forEach((t) => {
+
+    const mTask = matchExcept("taskStatus");
+    const mEff = matchExcept("effort");
+    const mPri = matchExcept("issuePriority");
+    const mRel = matchExcept("release");
+
+    wsTasks.forEach((t) => {
       const a = taskAttrs.get(t.id);
       if (!a) return;
-      taskStatus[a.taskStatus]++;
-      effort[a.effort]++;
-      issuePriority[a.issuePriority]++;
-      release[a.release]++;
+      if (mTask(t.id)) taskStatus[a.taskStatus]++;
+      if (mEff(t.id)) effort[a.effort]++;
+      if (mPri(t.id)) issuePriority[a.issuePriority]++;
+      if (mRel(t.id)) release[a.release]++;
     });
-    return { taskStatus, effort, issuePriority, release, total: allTasks.length };
-  }, [scoped, taskAttrs]);
+
+    return { taskStatus, effort, issuePriority, release, total: scopedActions.length };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeWs, filters, taskAttrs, scopedActions]);
 
   // Milestones + blockers for the bottom row — also scoped
   const milestones = useMemo(
