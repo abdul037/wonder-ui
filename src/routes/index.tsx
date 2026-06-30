@@ -120,7 +120,6 @@ function StatusBar({ counts, total }: { counts: Record<Status, number>; total: n
 function Dashboard() {
   const [range, setRange] = useState<Range>("This Sprint");
   const [activeWs, setActiveWs] = useState<Workstream | "ALL">("ALL");
-  const [avgMode, setAvgMode] = useState<"simple" | "weighted">("simple");
 
   const scoped = activeWs === "ALL" ? projects : projects.filter((p) => p.workstream === activeWs);
   const allTasks = scoped.flatMap((p) => p.tasks);
