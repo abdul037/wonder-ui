@@ -9,7 +9,7 @@ const navItems = [
   { to: "/sprint-board", icon: "view_kanban", label: "Sprint Board" },
   { to: "/roadmap", icon: "map", label: "Period Roadmap" },
   { to: "/unified-roadmap", icon: "timeline", label: "Unified Roadmap" },
-  { to: "/newsletter", icon: "campaign", label: "Newsletter" },
+  { to: "/newsletter", icon: "campaign", label: "Tech Pulse" },
 ] as const;
 
 const utilityItems = [

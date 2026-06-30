@@ -22,7 +22,7 @@ export const Route = createFileRoute("/admin")({
 type TabKey = "newsletter" | "import";
 
 const tabs: { key: TabKey; label: string; icon: string; desc: string }[] = [
-  { key: "newsletter", label: "Newsletter", icon: "campaign", desc: "Compose and publish product updates" },
+  { key: "newsletter", label: "Tech Pulse", icon: "campaign", desc: "Compose and publish product updates" },
   { key: "import", label: "Import Data", icon: "upload_file", desc: "Bulk upload projects, tasks, and milestones" },
 ];
 
@@ -51,7 +51,7 @@ function AdminPage() {
                 Admin Workspace
               </span>
             </div>
-            <h1 className="text-4xl font-black text-on-surface mt-1">Newsletter &amp; Import</h1>
+            <h1 className="text-4xl font-black text-on-surface mt-1">Tech Pulse &amp; Import</h1>
             <p className="text-on-surface-variant mt-1 text-sm">
               Project, task and pipeline editing now happens directly on the dashboards. Turn on{" "}
               <button
@@ -149,7 +149,7 @@ function NewsletterAdmin() {
     };
     addUpdate(u);
     setForm({ ...form, title: "", summary: "", body: "" });
-    toast.success("Update published to newsletter");
+    toast.success("Update published to Tech Pulse");
   };
 
   const remove = (id: string) => {
@@ -229,7 +229,7 @@ function NewsletterAdmin() {
         />
         <label className="flex items-center gap-2 text-xs text-on-surface-variant">
           <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} />
-          Feature in newsletter hero
+          Feature in Tech Pulse hero
         </label>
         <button onClick={publish} className="w-full bg-primary text-white py-2 rounded-lg text-sm font-bold hover:opacity-90 flex items-center justify-center gap-2">
           <span className="material-symbols-outlined text-base">send</span>
