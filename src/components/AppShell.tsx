@@ -132,14 +132,12 @@ function TopBar() {
         <div className="h-8 w-px bg-border-subtle mx-1" />
         <div className="flex items-center gap-3">
           <div className="text-right hidden lg:block">
-            <p className="text-sm font-medium leading-none">Marcus Sterling</p>
-            <p className="text-[10px] text-on-surface-variant uppercase tracking-tight mt-1">Chief Project Officer</p>
+            <p className="text-sm font-medium leading-none">Abdul Muwahib</p>
+            <p className="text-[10px] text-on-surface-variant uppercase tracking-tight mt-1">Product Owner</p>
           </div>
-          <img
-            className="w-10 h-10 rounded-full border-2 border-surface-card shadow-sm object-cover"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDp4oSwEVQaiA7CyF-dBoZi39-DggAsgtsEC65vFKUlOtWS9S0_SPL_L8Gnco81c_axSi4oNuOJBVNaDuaHJFzbBs96gqn19z7wrJ6hUf72EYldXiqFeoZejH8SiTy5Om-1UZ73XbKeK9O5gqu1uFrYmGmK5vkep8WAsoRAHJPoVrjHHiCIQglSWPkmwTM3bVV41L5zMlHaLnXbC1fdBoEAI1cy-2N57fC-aVxh0-63wnHiqqeAW9zglMR9guT3leZvX99xDOUMdaG8"
-            alt="Marcus Sterling"
-          />
+          <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-sm font-semibold text-primary">
+            AM
+          </div>
         </div>
       </div>
     </header>
