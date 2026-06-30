@@ -14,6 +14,7 @@ import { Route as SprintBoardRouteImport } from './routes/sprint-board'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as PortfolioRouteImport } from './routes/portfolio'
+import { Route as PipelineRouteImport } from './routes/pipeline'
 import { Route as NewsletterRouteImport } from './routes/newsletter'
 import { Route as ImportRouteImport } from './routes/import'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -43,6 +44,11 @@ const RoadmapRoute = RoadmapRouteImport.update({
 const PortfolioRoute = PortfolioRouteImport.update({
   id: '/portfolio',
   path: '/portfolio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PipelineRoute = PipelineRouteImport.update({
+  id: '/pipeline',
+  path: '/pipeline',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewsletterRoute = NewsletterRouteImport.update({
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/import': typeof ImportRoute
   '/newsletter': typeof NewsletterRoute
+  '/pipeline': typeof PipelineRoute
   '/portfolio': typeof PortfolioRouteWithChildren
   '/roadmap': typeof RoadmapRoute
   '/settings': typeof SettingsRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/import': typeof ImportRoute
   '/newsletter': typeof NewsletterRoute
+  '/pipeline': typeof PipelineRoute
   '/portfolio': typeof PortfolioRouteWithChildren
   '/roadmap': typeof RoadmapRoute
   '/settings': typeof SettingsRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/import': typeof ImportRoute
   '/newsletter': typeof NewsletterRoute
+  '/pipeline': typeof PipelineRoute
   '/portfolio': typeof PortfolioRouteWithChildren
   '/roadmap': typeof RoadmapRoute
   '/settings': typeof SettingsRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/import'
     | '/newsletter'
+    | '/pipeline'
     | '/portfolio'
     | '/roadmap'
     | '/settings'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/import'
     | '/newsletter'
+    | '/pipeline'
     | '/portfolio'
     | '/roadmap'
     | '/settings'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/import'
     | '/newsletter'
+    | '/pipeline'
     | '/portfolio'
     | '/roadmap'
     | '/settings'
@@ -152,6 +164,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   ImportRoute: typeof ImportRoute
   NewsletterRoute: typeof NewsletterRoute
+  PipelineRoute: typeof PipelineRoute
   PortfolioRoute: typeof PortfolioRouteWithChildren
   RoadmapRoute: typeof RoadmapRoute
   SettingsRoute: typeof SettingsRoute
@@ -194,6 +207,13 @@ declare module '@tanstack/react-router' {
       path: '/portfolio'
       fullPath: '/portfolio'
       preLoaderRoute: typeof PortfolioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pipeline': {
+      id: '/pipeline'
+      path: '/pipeline'
+      fullPath: '/pipeline'
+      preLoaderRoute: typeof PipelineRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/newsletter': {
@@ -251,6 +271,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   ImportRoute: ImportRoute,
   NewsletterRoute: NewsletterRoute,
+  PipelineRoute: PipelineRoute,
   PortfolioRoute: PortfolioRouteWithChildren,
   RoadmapRoute: RoadmapRoute,
   SettingsRoute: SettingsRoute,

@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 const navItems = [
   { to: "/", icon: "dashboard", label: "Dashboard" },
   { to: "/portfolio", icon: "folder_special", label: "Portfolio" },
+  { to: "/pipeline", icon: "pending_actions", label: "Pipeline" },
   { to: "/sprint-board", icon: "view_kanban", label: "Sprint Board" },
   { to: "/roadmap", icon: "map", label: "Roadmap" },
   { to: "/newsletter", icon: "campaign", label: "Newsletter" },

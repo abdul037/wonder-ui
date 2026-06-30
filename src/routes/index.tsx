@@ -8,6 +8,7 @@ import {
   type Project,
   type Priority,
 } from "@/data/projects";
+import { pipelineItems, pipelineStageColor } from "@/data/pipeline";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -448,6 +449,15 @@ function Dashboard() {
     [scoped]
   );
 
+  // Pipeline scoped by current workstream chip
+  const pipelineScoped = useMemo(
+    () =>
+      (activeWs === "ALL" ? pipelineItems : pipelineItems.filter((i) => i.workstream === activeWs))
+        .slice()
+        .sort((a, b) => new Date(a.expectedStart).getTime() - new Date(b.expectedStart).getTime()),
+    [activeWs]
+  );
+
   return (
     <AppShell>
       <div className="px-8 py-8 space-y-8 pb-24">
@@ -508,14 +518,15 @@ function Dashboard() {
             sparkline={{ kind: "sliver", color: "status-high" }}
           />
           <KpiCard
-            label="Avg. Delivery"
-            value="14d"
+            label={<>Pipeline<br />Intake</>}
+            value={pipelineScoped.length}
             caption={
               <span>
-                <span className="text-status-low font-bold">Efficiency 92%</span> Q4 Target
+                <span className="text-primary font-bold">{pipelineScoped.filter((p) => p.stage === "Scheduled").length} scheduled</span> · expected
               </span>
             }
-            sparkline={{ kind: "sliver", color: "status-low" }}
+            color="primary"
+            sparkline={{ kind: "rise", color: "primary" }}
           />
         </section>
 
@@ -753,11 +764,11 @@ function Dashboard() {
           </div>
         </section>
 
-        {/* Bottom row — Key Milestones + Critical Blockers */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        {/* Bottom row — Key Milestones + Expected Pipeline + Critical Blockers */}
+        <section className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="bg-surface-card rounded-2xl border border-border-subtle shadow-sm p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-on-surface">Key Milestones</h3>
+              <h3 className="text-base font-bold text-on-surface">Key Milestones</h3>
               <Link to="/roadmap" className="text-xs text-primary font-bold hover:underline">
                 View roadmap →
               </Link>
@@ -789,11 +800,55 @@ function Dashboard() {
             </ul>
           </div>
 
+          <div className="bg-surface-card rounded-2xl border border-border-subtle shadow-sm p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-[20px]">pending_actions</span>
+                <h3 className="text-base font-bold text-on-surface">Expected Pipeline</h3>
+              </div>
+              <Link to="/pipeline" className="text-xs text-primary font-bold hover:underline">
+                View pipeline →
+              </Link>
+            </div>
+            {pipelineScoped.length === 0 ? (
+              <p className="text-sm text-on-surface-variant">No upcoming intake for this workstream.</p>
+            ) : (
+              <ul className="space-y-3">
+                {pipelineScoped.slice(0, 5).map((i) => {
+                  const w = i.workstream.toLowerCase();
+                  return (
+                    <li key={i.id} className="flex items-start gap-3">
+                      <div
+                        className={`w-8 h-8 rounded-full bg-workstream-${w}/15 text-workstream-${w} flex items-center justify-center text-[10px] font-bold shrink-0`}
+                      >
+                        {i.businessOwner.initials}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold bg-workstream-${w}/10 text-workstream-${w}`}>
+                            {i.workstream}
+                          </span>
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold bg-${pipelineStageColor[i.stage]}/10 text-${pipelineStageColor[i.stage]}`}>
+                            {i.stage}
+                          </span>
+                        </div>
+                        <p className="text-sm font-medium text-on-surface mt-1 truncate">{i.name}</p>
+                        <p className="font-mono text-[10px] text-on-surface-variant mt-0.5">
+                          {new Date(i.expectedStart).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+                        </p>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
           <div className="bg-status-critical/5 rounded-2xl border border-status-critical/30 p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-status-critical">warning</span>
-                <h3 className="text-lg font-bold text-status-critical">Critical Blockers</h3>
+                <h3 className="text-base font-bold text-status-critical">Critical Blockers</h3>
               </div>
               <span className="text-xs font-bold text-status-critical">{blockers.length} open</span>
             </div>
