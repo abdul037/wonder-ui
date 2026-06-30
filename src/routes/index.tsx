@@ -8,6 +8,7 @@ import {
   type Project,
   type Priority,
 } from "@/data/projects";
+import { pipelineItems, pipelineStageColor } from "@/data/pipeline";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -508,14 +509,15 @@ function Dashboard() {
             sparkline={{ kind: "sliver", color: "status-high" }}
           />
           <KpiCard
-            label="Avg. Delivery"
-            value="14d"
+            label={<>Pipeline<br />Intake</>}
+            value={pipelineScoped.length}
             caption={
               <span>
-                <span className="text-status-low font-bold">Efficiency 92%</span> Q4 Target
+                <span className="text-primary font-bold">{pipelineScoped.filter((p) => p.stage === "Scheduled").length} scheduled</span> · expected
               </span>
             }
-            sparkline={{ kind: "sliver", color: "status-low" }}
+            color="primary"
+            sparkline={{ kind: "rise", color: "primary" }}
           />
         </section>
 
