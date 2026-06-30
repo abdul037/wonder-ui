@@ -116,10 +116,14 @@ function CategoryCard({
   title,
   icon,
   items,
+  activeKey,
+  onToggle,
 }: {
   title: string;
   icon: string;
   items: { label: string; value: number; color: string }[];
+  activeKey?: string | null;
+  onToggle?: (label: string) => void;
 }) {
   const total = items.reduce((s, i) => s + i.value, 0) || 1;
   return (
@@ -129,17 +133,37 @@ function CategoryCard({
           <span className="material-symbols-outlined text-[16px] text-on-surface-variant">{icon}</span>
           <h3 className="text-xs font-bold uppercase tracking-wide text-on-surface">{title}</h3>
         </div>
-        <span className="text-[10px] font-mono text-on-surface-variant">{total}</span>
+        {activeKey ? (
+          <button
+            onClick={() => onToggle?.(activeKey)}
+            className="text-[10px] font-bold text-primary hover:underline"
+          >
+            Clear
+          </button>
+        ) : (
+          <span className="text-[10px] font-mono text-on-surface-variant">{total}</span>
+        )}
       </div>
       <div className="space-y-2">
         {items.map((it) => {
           const pct = Math.round((it.value / total) * 100);
+          const isActive = activeKey === it.label;
+          const dimmed = activeKey && !isActive;
           return (
-            <div key={it.label}>
+            <button
+              key={it.label}
+              type="button"
+              onClick={() => onToggle?.(it.label)}
+              className={`w-full text-left rounded-md px-2 py-1 -mx-2 transition-all ${
+                isActive
+                  ? `bg-${it.color}/10 ring-1 ring-${it.color}/40`
+                  : "hover:bg-surface-container"
+              } ${dimmed ? "opacity-50" : ""}`}
+            >
               <div className="flex items-center justify-between text-[11px] mb-1">
                 <div className="flex items-center gap-1.5">
                   <span className={`w-1.5 h-1.5 rounded-full bg-${it.color}`} />
-                  <span className="text-on-surface font-medium">{it.label}</span>
+                  <span className={`font-medium ${isActive ? `text-${it.color}` : "text-on-surface"}`}>{it.label}</span>
                 </div>
                 <span className="font-mono text-on-surface-variant">
                   {it.value}
@@ -149,7 +173,7 @@ function CategoryCard({
               <div className="h-1 rounded-full bg-surface-container overflow-hidden">
                 <div className={`h-full bg-${it.color}`} style={{ width: `${pct}%` }} />
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -274,8 +298,15 @@ function ProjectCard({ project }: { project: Project }) {
 function Dashboard() {
   const [range, setRange] = useState<Range>("Daily");
   const [activeWs, setActiveWs] = useState<Workstream | "ALL">("ALL");
+  const [filters, setFilters] = useState<{
+    taskStatus: string | null;
+    effort: string | null;
+    issuePriority: string | null;
+    release: string | null;
+  }>({ taskStatus: null, effort: null, issuePriority: null, release: null });
 
-  const scoped = activeWs === "ALL" ? projects : projects.filter((p) => p.workstream === activeWs);
+  const toggle = (key: keyof typeof filters) => (label: string) =>
+    setFilters((f) => ({ ...f, [key]: f[key] === label ? null : label }));
 
   const metrics = useMemo(() => {
     const allTasks = projects.flatMap((p) => p.tasks);
@@ -291,33 +322,72 @@ function Dashboard() {
     return { totalProjects, totalActions, inSprint, blocked, highPriority };
   }, []);
 
-  // Categorical breakdowns (deterministic from existing data)
+  // Per-task attributes (deterministic) — used for both breakdowns and filtering
+  const taskAttrs = useMemo(() => {
+    const map = new Map<
+      string,
+      { projectId: string; taskStatus: string; effort: string; issuePriority: string; release: string }
+    >();
+    let i = 0;
+    projects.forEach((p) =>
+      p.tasks.forEach((t) => {
+        const taskStatus =
+          t.status === "Completed"
+            ? "Closed"
+            : t.status === "In Progress"
+            ? "In Progress"
+            : t.status === "Blocked" || t.status === "Delayed"
+            ? "On Hold"
+            : "Open";
+        map.set(t.id, {
+          projectId: p.id,
+          taskStatus,
+          effort: (["Low", "Medium", "High"] as const)[i % 3],
+          issuePriority: (["P1", "P2", "P3"] as const)[(i + 1) % 3],
+          release: i % 2 === 0 ? "Web App" : "Android App",
+        });
+        i++;
+      })
+    );
+    return map;
+  }, []);
+
+  // Filter project list by workstream + categorical filters (project must have at least one matching task)
+  const scoped = useMemo(() => {
+    const wsFiltered = activeWs === "ALL" ? projects : projects.filter((p) => p.workstream === activeWs);
+    const hasCatFilter = Object.values(filters).some(Boolean);
+    if (!hasCatFilter) return wsFiltered;
+    return wsFiltered.filter((p) =>
+      p.tasks.some((t) => {
+        const a = taskAttrs.get(t.id);
+        if (!a) return false;
+        return (
+          (!filters.taskStatus || a.taskStatus === filters.taskStatus) &&
+          (!filters.effort || a.effort === filters.effort) &&
+          (!filters.issuePriority || a.issuePriority === filters.issuePriority) &&
+          (!filters.release || a.release === filters.release)
+        );
+      })
+    );
+  }, [activeWs, filters, taskAttrs]);
+
+  // Categorical breakdowns — counted against current scope (excluding own filter for context)
   const categories = useMemo(() => {
-    const allTasks = projects.flatMap((p) => p.tasks);
+    const allTasks = scoped.flatMap((p) => p.tasks);
     const taskStatus = { Closed: 0, "In Progress": 0, Open: 0, "On Hold": 0 } as Record<string, number>;
     const effort = { Low: 0, Medium: 0, High: 0 } as Record<string, number>;
     const issuePriority = { P1: 0, P2: 0, P3: 0 } as Record<string, number>;
     const release = { "Web App": 0, "Android App": 0 } as Record<string, number>;
-
-    allTasks.forEach((t, i) => {
-      // Map existing statuses to the requested 4 buckets
-      const bucket =
-        t.status === "Completed"
-          ? "Closed"
-          : t.status === "In Progress"
-          ? "In Progress"
-          : t.status === "Blocked" || t.status === "Delayed"
-          ? "On Hold"
-          : "Open";
-      taskStatus[bucket]++;
-
-      // Deterministic effort/priority/release distribution
-      effort[(["Low", "Medium", "High"] as const)[i % 3]]++;
-      issuePriority[(["P1", "P2", "P3"] as const)[(i + 1) % 3]]++;
-      release[i % 2 === 0 ? "Web App" : "Android App"]++;
+    allTasks.forEach((t) => {
+      const a = taskAttrs.get(t.id);
+      if (!a) return;
+      taskStatus[a.taskStatus]++;
+      effort[a.effort]++;
+      issuePriority[a.issuePriority]++;
+      release[a.release]++;
     });
     return { taskStatus, effort, issuePriority, release, total: allTasks.length };
-  }, []);
+  }, [scoped, taskAttrs]);
 
   // Milestones + blockers for the bottom row
   const milestones = useMemo(
@@ -447,12 +517,28 @@ function Dashboard() {
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-bold text-on-surface">Action Categories</h2>
-            <span className="text-[11px] text-on-surface-variant">Across {categories.total} actions</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] text-on-surface-variant">
+                Across {categories.total} actions · {scoped.length} project{scoped.length === 1 ? "" : "s"}
+              </span>
+              {(filters.taskStatus || filters.effort || filters.issuePriority || filters.release) && (
+                <button
+                  onClick={() =>
+                    setFilters({ taskStatus: null, effort: null, issuePriority: null, release: null })
+                  }
+                  className="text-[11px] font-bold text-primary hover:underline"
+                >
+                  Reset all
+                </button>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             <CategoryCard
               title="Task Status"
               icon="task_alt"
+              activeKey={filters.taskStatus}
+              onToggle={toggle("taskStatus")}
               items={[
                 { label: "Closed", value: categories.taskStatus.Closed, color: "status-low" },
                 { label: "In Progress", value: categories.taskStatus["In Progress"], color: "primary" },
@@ -463,6 +549,8 @@ function Dashboard() {
             <CategoryCard
               title="Effort"
               icon="bolt"
+              activeKey={filters.effort}
+              onToggle={toggle("effort")}
               items={[
                 { label: "Low", value: categories.effort.Low, color: "status-low" },
                 { label: "Medium", value: categories.effort.Medium, color: "status-medium" },
@@ -472,6 +560,8 @@ function Dashboard() {
             <CategoryCard
               title="Issue Priority"
               icon="priority_high"
+              activeKey={filters.issuePriority}
+              onToggle={toggle("issuePriority")}
               items={[
                 { label: "P1", value: categories.issuePriority.P1, color: "status-critical" },
                 { label: "P2", value: categories.issuePriority.P2, color: "status-high" },
@@ -481,6 +571,8 @@ function Dashboard() {
             <CategoryCard
               title="Product Release Mode"
               icon="rocket_launch"
+              activeKey={filters.release}
+              onToggle={toggle("release")}
               items={[
                 { label: "Web App", value: categories.release["Web App"], color: "primary" },
                 { label: "Android App", value: categories.release["Android App"], color: "workstream-au" },
@@ -491,6 +583,11 @@ function Dashboard() {
 
         {/* Project cards grid */}
         <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {scoped.length === 0 && (
+            <div className="md:col-span-2 xl:col-span-3 bg-surface-card border border-dashed border-border-subtle rounded-xl p-8 text-center text-sm text-on-surface-variant">
+              No projects match the current filters.
+            </div>
+          )}
           {scoped.map((p) => (
             <ProjectCard key={p.id} project={p} />
           ))}
