@@ -647,7 +647,8 @@ function TasksGrid({ rows, isAdmin, onEditTask }: TaskListProps) {
               <p className="text-xs text-on-surface line-clamp-2">{task.latestUpdate.text}</p>
             </div>
           </div>
-        </Link>
+          </Link>
+        </div>
       ))}
     </div>
   );
