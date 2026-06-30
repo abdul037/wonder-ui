@@ -322,20 +322,6 @@ function Dashboard() {
   const hasAnyFilter =
     filters.taskStatus.length + filters.effort.length + filters.issuePriority.length + filters.release.length > 0;
 
-  const metrics = useMemo(() => {
-    const allTasks = projects.flatMap((p) => p.tasks);
-    const totalProjects = projects.length;
-    const totalActions = allTasks.length;
-    const inSprint = allTasks.filter((t) => t.inSprint).length;
-    const blocked =
-      projects.filter((p) => p.status === "Blocked").length +
-      allTasks.filter((t) => t.status === "Blocked").length;
-    const highPriority =
-      projects.filter((p) => p.priority === "High" || p.priority === "Critical").length +
-      allTasks.filter((t) => false).length; // placeholder for task priority
-    return { totalProjects, totalActions, inSprint, blocked, highPriority };
-  }, []);
-
   // Per-task attributes (deterministic) — used for both breakdowns and filtering
   const taskAttrs = useMemo(() => {
     const map = new Map<
@@ -385,7 +371,7 @@ function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeWs, filters, taskAttrs]);
 
-  // Matching actions (tasks) within the workstream scope
+  // Matching actions (tasks) within the workstream + category scope
   const scopedActions = useMemo(() => {
     const wsFiltered = activeWs === "ALL" ? projects : projects.filter((p) => p.workstream === activeWs);
     const result: { project: Project; task: Project["tasks"][number]; attrs: ReturnType<typeof taskAttrs.get> }[] = [];
@@ -397,6 +383,19 @@ function Dashboard() {
     return result;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeWs, filters, taskAttrs]);
+
+  // KPIs reflect the current workstream + categorical filter scope
+  const metrics = useMemo(() => {
+    const matchingTasks = scopedActions.map((s) => s.task);
+    const totalProjects = scoped.length;
+    const totalActions = matchingTasks.length;
+    const inSprint = matchingTasks.filter((t) => t.inSprint).length;
+    const blocked =
+      scoped.filter((p) => p.status === "Blocked").length +
+      matchingTasks.filter((t) => t.status === "Blocked").length;
+    const highPriority = scoped.filter((p) => p.priority === "High" || p.priority === "Critical").length;
+    return { totalProjects, totalActions, inSprint, blocked, highPriority };
+  }, [scoped, scopedActions]);
 
   // Categorical breakdowns — counted against current scope (excluding own filter for context)
   const categories = useMemo(() => {
@@ -416,17 +415,14 @@ function Dashboard() {
     return { taskStatus, effort, issuePriority, release, total: allTasks.length };
   }, [scoped, taskAttrs]);
 
-  // Milestones + blockers for the bottom row
+  // Milestones + blockers for the bottom row — also scoped
   const milestones = useMemo(
-    () =>
-      projects
-        .flatMap((p) => p.timeline.map((t) => ({ project: p, ...t })))
-        .slice(0, 4),
-    []
+    () => scoped.flatMap((p) => p.timeline.map((t) => ({ project: p, ...t }))).slice(0, 4),
+    [scoped]
   );
   const blockers = useMemo(
-    () => projects.flatMap((p) => p.blockers.map((b) => ({ project: p, ...b }))).slice(0, 3),
-    []
+    () => scoped.flatMap((p) => p.blockers.map((b) => ({ project: p, ...b }))).slice(0, 3),
+    [scoped]
   );
 
   return (
