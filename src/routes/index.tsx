@@ -449,6 +449,15 @@ function Dashboard() {
     [scoped]
   );
 
+  // Pipeline scoped by current workstream chip
+  const pipelineScoped = useMemo(
+    () =>
+      (activeWs === "ALL" ? pipelineItems : pipelineItems.filter((i) => i.workstream === activeWs))
+        .slice()
+        .sort((a, b) => new Date(a.expectedStart).getTime() - new Date(b.expectedStart).getTime()),
+    [activeWs]
+  );
+
   return (
     <AppShell>
       <div className="px-8 py-8 space-y-8 pb-24">
