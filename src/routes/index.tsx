@@ -517,12 +517,28 @@ function Dashboard() {
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-bold text-on-surface">Action Categories</h2>
-            <span className="text-[11px] text-on-surface-variant">Across {categories.total} actions</span>
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] text-on-surface-variant">
+                Across {categories.total} actions · {scoped.length} project{scoped.length === 1 ? "" : "s"}
+              </span>
+              {(filters.taskStatus || filters.effort || filters.issuePriority || filters.release) && (
+                <button
+                  onClick={() =>
+                    setFilters({ taskStatus: null, effort: null, issuePriority: null, release: null })
+                  }
+                  className="text-[11px] font-bold text-primary hover:underline"
+                >
+                  Reset all
+                </button>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
             <CategoryCard
               title="Task Status"
               icon="task_alt"
+              activeKey={filters.taskStatus}
+              onToggle={toggle("taskStatus")}
               items={[
                 { label: "Closed", value: categories.taskStatus.Closed, color: "status-low" },
                 { label: "In Progress", value: categories.taskStatus["In Progress"], color: "primary" },
@@ -533,6 +549,8 @@ function Dashboard() {
             <CategoryCard
               title="Effort"
               icon="bolt"
+              activeKey={filters.effort}
+              onToggle={toggle("effort")}
               items={[
                 { label: "Low", value: categories.effort.Low, color: "status-low" },
                 { label: "Medium", value: categories.effort.Medium, color: "status-medium" },
@@ -542,6 +560,8 @@ function Dashboard() {
             <CategoryCard
               title="Issue Priority"
               icon="priority_high"
+              activeKey={filters.issuePriority}
+              onToggle={toggle("issuePriority")}
               items={[
                 { label: "P1", value: categories.issuePriority.P1, color: "status-critical" },
                 { label: "P2", value: categories.issuePriority.P2, color: "status-high" },
@@ -551,6 +571,8 @@ function Dashboard() {
             <CategoryCard
               title="Product Release Mode"
               icon="rocket_launch"
+              activeKey={filters.release}
+              onToggle={toggle("release")}
               items={[
                 { label: "Web App", value: categories.release["Web App"], color: "primary" },
                 { label: "Android App", value: categories.release["Android App"], color: "workstream-au" },
@@ -561,6 +583,11 @@ function Dashboard() {
 
         {/* Project cards grid */}
         <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {scoped.length === 0 && (
+            <div className="md:col-span-2 xl:col-span-3 bg-surface-card border border-dashed border-border-subtle rounded-xl p-8 text-center text-sm text-on-surface-variant">
+              No projects match the current filters.
+            </div>
+          )}
           {scoped.map((p) => (
             <ProjectCard key={p.id} project={p} />
           ))}
