@@ -4,6 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import {
   projects,
   statusStyle,
+  getProjectUpdates,
   type Person,
   type Project,
   type Status,
@@ -12,11 +13,13 @@ import {
 } from "@/data/projects";
 import { relativeTime } from "@/lib/time";
 import { useIsAdmin } from "@/lib/admin";
-import { useDataVersion } from "@/lib/store";
+import { useDataVersion, appendProjectUpdate, addBlocker } from "@/lib/store";
 import { ProjectEditDialog } from "@/components/admin-edit/ProjectEditDialog";
 import { TaskEditDialog } from "@/components/admin-edit/TaskEditDialog";
 import { createTask } from "@/lib/store";
 import { toast } from "sonner";
+import { QuickUpdate } from "@/components/portfolio/QuickUpdate";
+import { UpdateTimeline } from "@/components/portfolio/UpdateTimeline";
 
 export const Route = createFileRoute("/portfolio")({
   head: () => ({
