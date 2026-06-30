@@ -319,7 +319,7 @@ function ProjectsTable({ rows, isAdmin, onEdit, expanded, onToggle, onEditTask, 
             <tr className="bg-surface-container-low border-b border-border-subtle text-on-surface-variant text-xs">
               <th className="px-2 py-3 w-8" />
               {[
-                "Project", "Lead Task", "Task ID", "Type", "Sprint", "Status",
+                "Project", "Lead Task", "Task ID", "Type", "Status",
                 "Currently With", "Tech Owner", "Business Owner", "Log", "Latest Update", "Workstream",
               ].map((h) => (
                 <th key={h} className="px-4 py-3 font-medium whitespace-nowrap">{h}</th>
@@ -356,7 +356,6 @@ function ProjectsTable({ rows, isAdmin, onEdit, expanded, onToggle, onEditTask, 
                   <td className="px-4 py-4">{lead?.name ?? "—"}</td>
                   <td className="px-4 py-4 font-mono text-xs text-on-surface-variant">{lead?.id ?? p.eid}</td>
                   <td className="px-4 py-4 text-xs">{lead?.type ?? p.type}</td>
-                  <td className="px-4 py-4">{lead ? <SprintPill task={lead} /> : "—"}</td>
                   <td className="px-4 py-4"><StatusPill s={p.status} /></td>
                   <td className="px-4 py-4"><div className="flex items-center gap-2"><Avatar person={p.currentlyWith} /><span className="text-xs">{p.currentlyWith.name}</span></div></td>
                   <td className="px-4 py-4"><div className="flex items-center gap-2"><Avatar person={p.techOwner} /><span className="text-xs">{p.techOwner.name}</span></div></td>
@@ -387,7 +386,7 @@ function ProjectsTable({ rows, isAdmin, onEdit, expanded, onToggle, onEditTask, 
                 {isOpen && (
                   <tr key={`${p.id}-drill`} className="bg-surface-container-lowest">
                     <td />
-                    <td colSpan={isAdmin ? 13 : 12} className="px-4 py-3">
+                    <td colSpan={isAdmin ? 12 : 11} className="px-4 py-3">
                       <TaskDrilldown
                         project={p}
                         isAdmin={isAdmin}
@@ -418,7 +417,7 @@ function TasksTable({ rows, isAdmin, onEditTask }: TaskListProps) {
           <thead>
             <tr className="bg-surface-container-low border-b border-border-subtle text-on-surface-variant text-xs">
               {[
-                "Project", "Task", "Task ID", "Type", "Sprint", "Status",
+                "Project", "Task", "Task ID", "Type", "Status",
                 "Currently With", "Tech Owner", "Business Owner", "Latest Update", "Workstream",
               ].map((h) => (
                 <th key={h} className="px-4 py-3 font-medium whitespace-nowrap">{h}</th>
@@ -437,7 +436,6 @@ function TasksTable({ rows, isAdmin, onEditTask }: TaskListProps) {
                 <td className="px-4 py-4 font-medium text-on-surface">{task.name}</td>
                 <td className="px-4 py-4 font-mono text-xs text-on-surface-variant">{task.id}</td>
                 <td className="px-4 py-4 text-xs">{task.type}</td>
-                <td className="px-4 py-4"><SprintPill task={task} /></td>
                 <td className="px-4 py-4"><StatusPill s={task.status} /></td>
                 <td className="px-4 py-4"><div className="flex items-center gap-2"><Avatar person={task.currentlyWith} /><span className="text-xs">{task.currentlyWith.name}</span></div></td>
                 <td className="px-4 py-4"><div className="flex items-center gap-2"><Avatar person={task.techOwner} /><span className="text-xs">{task.techOwner.name}</span></div></td>
@@ -510,7 +508,6 @@ function ProjectsGrid({ rows, isAdmin, onEdit, expanded, onToggle, onEditTask, o
               </div>
               <div className="flex flex-wrap gap-2">
                 <StatusPill s={p.status} />
-                {lead && <SprintPill task={lead} />}
                 <span className="text-[10px] uppercase tracking-wide bg-surface-container-low text-on-surface-variant px-2 py-0.5 rounded">{lead?.type ?? p.type}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border-subtle">
@@ -600,7 +597,6 @@ function TasksGrid({ rows, isAdmin, onEditTask }: TaskListProps) {
             </div>
             <div className="flex flex-wrap gap-2">
               <StatusPill s={task.status} />
-              <SprintPill task={task} />
               <span className="text-[10px] uppercase tracking-wide bg-surface-container-low text-on-surface-variant px-2 py-0.5 rounded">{task.type}</span>
             </div>
             <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border-subtle">
@@ -691,7 +687,6 @@ function TaskDrilldown({
                 )}
               </div>
               <StatusPill s={t.status} />
-              <SprintPill task={t} />
               {!compact && (
                 <div className="flex items-center gap-1 w-28 shrink-0">
                   <Avatar person={t.currentlyWith} size={18} />
