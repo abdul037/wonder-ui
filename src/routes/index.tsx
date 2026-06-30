@@ -93,18 +93,18 @@ function KpiCard({
 }) {
   return (
     <div
-      className={`bg-surface-card rounded-2xl p-5 border border-border-subtle shadow-sm flex flex-col justify-between min-h-[150px] transition-all hover:shadow-md hover:-translate-y-0.5 ${
+      className={`bg-surface-card rounded-xl p-4 border border-border-subtle shadow-sm flex flex-col justify-between min-h-[120px] transition-all hover:shadow-md hover:-translate-y-0.5 ${
         critical ? "border-l-4 border-l-status-critical" : ""
       }`}
     >
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-on-surface-variant leading-tight">{label}</p>
-      <div className="flex items-end justify-between gap-3 mt-2">
-        <p className={`text-5xl font-black tracking-tight ${valueClass ?? (color ? `text-${color}` : "text-on-surface")}`}>
+      <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant leading-tight">{label}</p>
+      <div className="flex items-end justify-between gap-2 mt-1">
+        <p className={`text-3xl font-black tracking-tight ${valueClass ?? (color ? `text-${color}` : "text-on-surface")}`}>
           {value}
         </p>
-        {caption && <p className="text-[11px] text-on-surface-variant pb-1 text-right">{caption}</p>}
+        {caption && <p className="text-[10px] text-on-surface-variant pb-1 text-right">{caption}</p>}
       </div>
-      <div className="mt-3">
+      <div className="mt-2">
         <Sparkline kind={sparkline.kind} color={sparkline.color} />
       </div>
     </div>
