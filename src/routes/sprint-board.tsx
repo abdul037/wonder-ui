@@ -2,11 +2,30 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { useIsAdmin } from "@/lib/admin";
-import { useDataVersion, deriveTaskColumn, moveTaskColumn } from "@/lib/store";
+import {
+  useDataVersion,
+  deriveTaskColumn,
+  moveTaskColumn,
+  createTask,
+  deleteTask,
+} from "@/lib/store";
 import { projects, type BoardColumn, type Project, type Task } from "@/data/projects";
 import { TaskEditDialog } from "@/components/admin-edit/TaskEditDialog";
+import { TaskQuickEdit } from "@/components/admin-edit/TaskQuickEdit";
 import { toast } from "sonner";
-import { deleteTask } from "@/lib/store";
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  closestCenter,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
 
 export const Route = createFileRoute("/sprint-board")({
   head: () => ({
@@ -68,48 +87,22 @@ function formatDate(iso: string) {
 
 type Row = { project: Project; task: Task; column: BoardColumn };
 
-function TaskCard({
-  row,
-  accent,
-  isAdmin,
-  onEdit,
-  onMove,
-  onDelete,
-}: {
-  row: Row;
-  accent?: string;
-  isAdmin: boolean;
-  onEdit: (r: Row) => void;
-  onMove: (r: Row, c: BoardColumn) => void;
-  onDelete: (r: Row) => void;
-}) {
+function TaskCardBody({ row, accent }: { row: Row; accent?: string }) {
   const { task, project } = row;
-  const [moveOpen, setMoveOpen] = useState(false);
   return (
     <div
-      className={`group bg-surface-card border border-border-subtle rounded-lg p-3 hover:shadow-md transition-all relative ${
+      className={`group bg-surface-card border border-border-subtle rounded-xl p-3 hover:shadow-md transition-all ${
         accent ?? ""
       }`}
     >
       <div className="flex justify-between items-start mb-2 gap-2">
-        <span className="font-mono text-xs text-on-surface-variant">{task.id}</span>
-        <div className="flex items-center gap-1">
-          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${priorityBadge(task.priority)}`}>
-            {priorityLabel(task.priority)}
-          </span>
-          {isAdmin && (
-            <button
-              onClick={() => onEdit(row)}
-              title="Edit task"
-              className="text-primary hover:bg-primary/10 rounded p-0.5"
-            >
-              <span className="material-symbols-outlined !text-[16px]">edit</span>
-            </button>
-          )}
-        </div>
+        <span className="font-mono text-[11px] text-on-surface-variant">{task.id}</span>
+        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${priorityBadge(task.priority)}`}>
+          {priorityLabel(task.priority)}
+        </span>
       </div>
-      <h4 className="text-sm font-medium mb-1.5 leading-tight">{task.name}</h4>
-      <p className="text-[11px] text-on-surface-variant mb-2 truncate" title={project.name}>
+      <h4 className="text-[13px] font-semibold mb-1.5 leading-snug">{task.name}</h4>
+      <p className="text-[11px] text-on-surface-variant mb-2.5 truncate" title={project.name}>
         {project.name}
       </p>
       <div className="flex flex-wrap gap-1.5 mb-2.5">
@@ -140,51 +133,110 @@ function TaskCard({
             {formatDate(task.latestUpdate.at)}
           </span>
         </div>
-        {isAdmin ? (
-          <div className="flex items-center gap-1">
-            <div className="relative">
-              <button
-                onClick={() => setMoveOpen((v) => !v)}
-                title="Move to column"
-                className="text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded p-0.5"
-              >
-                <span className="material-symbols-outlined !text-[16px]">swap_horiz</span>
-              </button>
-              {moveOpen && (
-                <>
-                  <button
-                    aria-label="Close menu"
-                    onClick={() => setMoveOpen(false)}
-                    className="fixed inset-0 z-30 cursor-default"
-                  />
-                  <div className="absolute right-0 z-40 mt-1 w-44 bg-surface-card border border-border-subtle rounded-lg shadow-lg py-1">
-                    {COLUMNS.filter((c) => c.key !== row.column).map((c) => (
-                      <button
-                        key={c.key}
-                        onClick={() => {
-                          onMove(row, c.key);
-                          setMoveOpen(false);
-                        }}
-                        className="w-full text-left px-3 py-1.5 text-xs hover:bg-surface-container-low flex items-center gap-2"
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-                        {c.title}
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-            <button
-              onClick={() => onDelete(row)}
-              title="Delete task"
-              className="text-on-surface-variant hover:text-status-critical hover:bg-status-critical/10 rounded p-0.5"
-            >
-              <span className="material-symbols-outlined !text-[16px]">delete</span>
-            </button>
-          </div>
-        ) : (
-          <span className="material-symbols-outlined !text-[16px] text-on-surface-variant">chat_bubble_outline</span>
+        <span className="material-symbols-outlined !text-[14px] text-outline opacity-0 group-hover:opacity-100 transition-opacity">
+          drag_indicator
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function DraggableCard({
+  row,
+  accent,
+  onClick,
+  isAdmin,
+}: {
+  row: Row;
+  accent?: string;
+  onClick: () => void;
+  isAdmin: boolean;
+}) {
+  const id = `${row.project.id}::${row.task.id}`;
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id,
+    disabled: !isAdmin,
+    data: { row },
+  });
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      style={{
+        opacity: isDragging ? 0.4 : 1,
+        cursor: isAdmin ? "grab" : "pointer",
+        touchAction: "manipulation",
+      }}
+    >
+      <div onClick={onClick} {...(isAdmin ? listeners : {})}>
+        <TaskCardBody row={row} accent={accent} />
+      </div>
+    </div>
+  );
+}
+
+function DroppableColumn({
+  col,
+  rows,
+  isAdmin,
+  onCardClick,
+  onAdd,
+  isOver,
+  draggingFrom,
+}: {
+  col: ColumnDef;
+  rows: Row[];
+  isAdmin: boolean;
+  onCardClick: (r: Row) => void;
+  onAdd: () => void;
+  isOver: boolean;
+  draggingFrom: BoardColumn | null;
+}) {
+  const { setNodeRef } = useDroppable({ id: `col::${col.key}` });
+  const showHighlight = isOver && draggingFrom !== col.key;
+  return (
+    <div className="kanban-column flex flex-col gap-3 shrink-0">
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full ${col.dot}`} />
+          <h3
+            className={`text-xs font-bold uppercase tracking-wider ${
+              col.critical ? "text-status-critical" : "text-on-surface"
+            }`}
+          >
+            {col.title}
+          </h3>
+          <span className="text-on-surface-variant font-mono text-[11px] bg-surface-container-high px-1.5 py-0.5 rounded">
+            {rows.length}
+          </span>
+        </div>
+      </div>
+      <div
+        ref={setNodeRef}
+        className={`flex flex-col gap-3 pr-1 pb-4 min-h-[60px] rounded-xl transition-all ${
+          showHighlight ? "bg-primary/5 ring-2 ring-primary/40 ring-inset" : ""
+        }`}
+      >
+        {rows.map((r) => (
+          <DraggableCard
+            key={`${r.project.id}-${r.task.id}`}
+            row={r}
+            accent={col.accent}
+            isAdmin={isAdmin}
+            onClick={() => onCardClick(r)}
+          />
+        ))}
+        {rows.length === 0 && !showHighlight && (
+          <div className="text-[11px] text-on-surface-variant italic px-1 py-2">No tasks</div>
+        )}
+        {isAdmin && (
+          <button
+            onClick={onAdd}
+            className="w-full py-2 flex items-center justify-center gap-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors border border-dashed border-border-subtle"
+          >
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            <span className="text-[11px] font-semibold">Add task</span>
+          </button>
         )}
       </div>
     </div>
@@ -196,6 +248,14 @@ function SprintBoard() {
   useDataVersion();
   const [editing, setEditing] = useState<Row | null>(null);
   const [creating, setCreating] = useState<{ column?: BoardColumn } | null>(null);
+  const [dragging, setDragging] = useState<Row | null>(null);
+  const [overCol, setOverCol] = useState<BoardColumn | null>(null);
+  const [inlineAdd, setInlineAdd] = useState<{ column: BoardColumn; value: string } | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor),
+  );
 
   const allRows: Row[] = useMemo(() => {
     const rows: Row[] = [];
@@ -223,14 +283,53 @@ function SprintBoard() {
     new Map(sprintRows.map((r) => [r.task.currentlyWith.name, r.task.currentlyWith])).values(),
   );
 
-  const handleMove = (r: Row, target: BoardColumn) => {
-    moveTaskColumn(r.project.id, r.task.id, target);
-    toast.success(`Moved to ${COLUMNS.find((c) => c.key === target)?.title}`);
+  const onDragStart = (e: DragStartEvent) => {
+    const row = (e.active.data.current as { row?: Row } | undefined)?.row ?? null;
+    setDragging(row);
   };
-  const handleDelete = (r: Row) => {
-    if (!confirm(`Delete task "${r.task.name}"?`)) return;
-    deleteTask(r.project.id, r.task.id);
-    toast.success("Task deleted");
+  const onDragOver = (e: { over: { id: string | number } | null }) => {
+    const id = e.over?.id;
+    if (typeof id === "string" && id.startsWith("col::")) {
+      setOverCol(id.slice(5) as BoardColumn);
+    } else {
+      setOverCol(null);
+    }
+  };
+  const onDragEnd = (e: DragEndEvent) => {
+    const row = (e.active.data.current as { row?: Row } | undefined)?.row;
+    const overId = e.over?.id;
+    setDragging(null);
+    setOverCol(null);
+    if (!row || typeof overId !== "string" || !overId.startsWith("col::")) return;
+    const target = overId.slice(5) as BoardColumn;
+    if (target === row.column) return;
+    moveTaskColumn(row.project.id, row.task.id, target);
+    toast.success(`Moved to ${COLUMNS.find((c) => c.key === target)?.title}`, { duration: 1400 });
+  };
+
+  const handleInlineAdd = () => {
+    if (!inlineAdd) return;
+    const name = inlineAdd.value.trim();
+    if (!name) {
+      setInlineAdd(null);
+      return;
+    }
+    const targetProject = projects[0];
+    if (!targetProject) return;
+    const created = createTask(targetProject.id, {
+      name,
+      boardColumn: inlineAdd.column,
+      inSprint:
+        inlineAdd.column === "sprint" ||
+        inlineAdd.column === "progress" ||
+        inlineAdd.column === "blocked" ||
+        inlineAdd.column === "uat",
+    });
+    if (created) {
+      moveTaskColumn(targetProject.id, created.id, inlineAdd.column);
+      toast.success("Task added");
+    }
+    setInlineAdd(null);
   };
 
   return (
@@ -297,59 +396,76 @@ function SprintBoard() {
           ))}
         </div>
       </section>
-      <div className="overflow-x-auto p-6 flex gap-6 custom-scrollbar min-h-full">
-        {COLUMNS.map((col) => {
-          const rows = byColumn.get(col.key) ?? [];
-          return (
-            <div key={col.key} className="kanban-column flex flex-col gap-3 shrink-0">
-              <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${col.dot}`} />
-                  <h3
-                    className={`text-xs font-bold uppercase tracking-wider ${
-                      col.critical ? "text-status-critical" : "text-on-surface"
-                    }`}
-                  >
-                    {col.title}
-                  </h3>
-                  <span className="text-on-surface-variant font-mono text-xs bg-surface-container-high px-1.5 py-0.5 rounded">
-                    {rows.length}
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col gap-3 pr-1 pb-4">
-                {rows.map((r) => (
-                  <TaskCard
-                    key={`${r.project.id}-${r.task.id}`}
-                    row={r}
-                    accent={col.accent}
-                    isAdmin={isAdmin}
-                    onEdit={setEditing}
-                    onMove={handleMove}
-                    onDelete={handleDelete}
-                  />
-                ))}
-                {rows.length === 0 && (
-                  <div className="text-[11px] text-on-surface-variant italic px-1 py-2">
-                    No tasks
-                  </div>
-                )}
-                {isAdmin && (
-                  <button
-                    onClick={() => setCreating({ column: col.key })}
-                    className="w-full py-2 flex items-center justify-center gap-2 text-on-surface-variant hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors border border-dashed border-border-subtle"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">add</span>
-                    <span className="text-xs font-medium">Add Task</span>
-                  </button>
-                )}
-              </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDragEnd={onDragEnd}
+        onDragCancel={() => {
+          setDragging(null);
+          setOverCol(null);
+        }}
+      >
+        <div className="overflow-x-auto p-6 flex gap-6 custom-scrollbar min-h-full">
+          {COLUMNS.map((col) => (
+            <DroppableColumn
+              key={col.key}
+              col={col}
+              rows={byColumn.get(col.key) ?? []}
+              isAdmin={isAdmin}
+              onCardClick={(r) => setEditing(r)}
+              onAdd={() => setInlineAdd({ column: col.key, value: "" })}
+              isOver={overCol === col.key}
+              draggingFrom={dragging?.column ?? null}
+            />
+          ))}
+        </div>
+        <DragOverlay dropAnimation={{ duration: 180 }}>
+          {dragging ? (
+            <div className="rotate-1 shadow-2xl">
+              <TaskCardBody row={dragging} />
             </div>
-          );
-        })}
-      </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
-      <TaskEditDialog
+      {inlineAdd && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end sm:items-center justify-center p-4" onClick={() => setInlineAdd(null)}>
+          <div className="bg-surface-card border border-border-subtle rounded-xl shadow-2xl w-full max-w-md p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold mb-2">
+              Add task to {COLUMNS.find((c) => c.key === inlineAdd.column)?.title}
+            </div>
+            <input
+              autoFocus
+              value={inlineAdd.value}
+              onChange={(e) => setInlineAdd({ ...inlineAdd, value: e.target.value })}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleInlineAdd();
+                if (e.key === "Escape") setInlineAdd(null);
+              }}
+              placeholder="Task title — press Enter to create"
+              className="w-full px-3 py-2 text-sm rounded-md bg-surface-container-low border border-border-subtle focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+            <div className="flex justify-end gap-2 mt-3">
+              <button
+                onClick={() => setInlineAdd(null)}
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-on-surface-variant hover:bg-surface-container-low"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleInlineAdd}
+                className="px-3 py-1.5 rounded-md text-xs font-bold bg-primary text-white hover:opacity-90"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <TaskQuickEdit
         open={!!editing}
         onClose={() => setEditing(null)}
         projectId={editing?.project.id}
