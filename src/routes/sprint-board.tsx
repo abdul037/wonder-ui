@@ -117,6 +117,44 @@ const columns: Column[] = [
     ],
   },
   {
+    key: "blocked",
+    title: "Blocked",
+    dot: "bg-status-critical",
+    count: 2,
+    accent: "border-l-4 border-l-status-critical",
+    tasks: [
+      {
+        id: "#BUG-2287",
+        title: "Vendor OAuth handoff stalled — Fero Global",
+        project: "Fero Auto-Plan",
+        priority: "CRITICAL",
+        tag: { label: "Integration", color: "ox" },
+        stack: { icon: "vpn_key", label: "OAuth" },
+        date: "4d overdue",
+        avatar: sprintAvatar,
+      },
+    ],
+  },
+  {
+    key: "uat",
+    title: "UAT",
+    dot: "bg-secondary",
+    count: 3,
+    tasks: [
+      {
+        id: "#ENH-4811",
+        title: "Bulk WeighScale — UAT round 3 across 14 DCs",
+        project: "Bulk WeighScale",
+        priority: "MEDIUM",
+        tag: { label: "Integration", color: "dw" },
+        stack: { icon: "fact_check", label: "UAT" },
+        date: "Sep 24",
+        avatar: sprintAvatar,
+        progress: 92,
+      },
+    ],
+  },
+  {
     key: "done",
     title: "Done",
     dot: "bg-status-low",
@@ -213,11 +251,11 @@ function SprintBoard() {
       </section>
       <div className="overflow-x-auto p-6 flex gap-6 custom-scrollbar min-h-full">
         {columns.map((col) => (
-          <div key={col.key} className="flex flex-col gap-3 w-72 shrink-0">
+          <div key={col.key} className="kanban-column flex flex-col gap-3 shrink-0">
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${col.dot}`} />
-                <h3 className="text-xs font-bold text-on-surface uppercase tracking-wider">{col.title}</h3>
+                <h3 className={`text-xs font-bold uppercase tracking-wider ${col.key === "blocked" ? "text-status-critical" : "text-on-surface"}`}>{col.title}</h3>
                 <span className="text-on-surface-variant font-mono text-xs bg-surface-container-high px-1.5 py-0.5 rounded">
                   {col.count}
                 </span>

@@ -135,4 +135,5 @@ html.dark {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
     transform: translateY(-1px);
   }
+  .kanban-column { min-width: 280px; max-width: 320px; width: 288px; }
 }
