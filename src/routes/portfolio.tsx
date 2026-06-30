@@ -188,15 +188,22 @@ function PortfolioIndex() {
               </button>
             )}
             <div className="flex items-center gap-1 bg-surface-container p-1 rounded-lg">
-              {(["projects", "tasks"] as Scope[]).map((s) => (
+              {(
+                [
+                  { k: "projects", label: "Projects" },
+                  { k: "tasks", label: "All Tasks" },
+                ] as { k: Scope; label: string }[]
+              ).map(({ k, label }) => (
                 <button
-                  key={s}
-                  onClick={() => setScope(s)}
-                  className={`px-3 py-1.5 rounded text-xs font-medium capitalize transition-colors ${
-                    scope === s ? "bg-surface-card shadow-sm text-primary" : "text-on-surface-variant hover:bg-surface-container-high"
+                  key={k}
+                  onClick={() => setScope(k)}
+                  className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                    scope === k
+                      ? "bg-surface-card shadow-sm text-primary"
+                      : "text-on-surface-variant hover:bg-surface-container-high"
                   }`}
                 >
-                  {s}
+                  {label}
                 </button>
               ))}
             </div>
@@ -266,14 +273,38 @@ function PortfolioIndex() {
 
         {view === "list" ? (
           scope === "projects" ? (
-            <ProjectsTable rows={filteredProjects} isAdmin={isAdmin} onEdit={setEditing} />
+            <ProjectsTable
+              rows={filteredProjects}
+              isAdmin={isAdmin}
+              onEdit={setEditing}
+              expanded={expanded}
+              onToggle={toggleExpand}
+              onEditTask={(project, task) => setTaskEdit({ project, task })}
+              onAddTask={addTaskToProject}
+            />
           ) : (
-            <TasksTable rows={filteredTasks} />
+            <TasksTable
+              rows={filteredTasks}
+              isAdmin={isAdmin}
+              onEditTask={(project, task) => setTaskEdit({ project, task })}
+            />
           )
         ) : scope === "projects" ? (
-          <ProjectsGrid rows={filteredProjects} isAdmin={isAdmin} onEdit={setEditing} />
+          <ProjectsGrid
+            rows={filteredProjects}
+            isAdmin={isAdmin}
+            onEdit={setEditing}
+            expanded={expanded}
+            onToggle={toggleExpand}
+            onEditTask={(project, task) => setTaskEdit({ project, task })}
+            onAddTask={addTaskToProject}
+          />
         ) : (
-          <TasksGrid rows={filteredTasks} />
+          <TasksGrid
+            rows={filteredTasks}
+            isAdmin={isAdmin}
+            onEditTask={(project, task) => setTaskEdit({ project, task })}
+          />
         )}
       </div>
       <ProjectEditDialog
@@ -283,6 +314,12 @@ function PortfolioIndex() {
           setCreating(false);
         }}
         project={editing}
+      />
+      <TaskEditDialog
+        open={!!taskEdit}
+        onClose={() => setTaskEdit(null)}
+        projectId={taskEdit?.project.id}
+        task={taskEdit?.task ?? null}
       />
     </AppShell>
   );
