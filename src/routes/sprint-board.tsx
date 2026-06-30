@@ -338,9 +338,9 @@ function SprintBoard() {
         <div className="px-6 py-2 bg-status-medium/10 border-b border-status-medium/20 flex items-center gap-2 text-[11px] text-on-surface">
           <span className="material-symbols-outlined !text-[16px] text-status-medium">edit_note</span>
           <span>
-            Admin mode is ON — click <span className="font-bold">edit</span> to edit a task,{" "}
-            <span className="font-bold">swap</span> to move it between columns, or{" "}
-            <span className="font-bold">Add task</span> on any column.
+            Admin mode is ON — <span className="font-bold">drag</span> cards between columns,{" "}
+            <span className="font-bold">click</span> any card to quick-edit, or{" "}
+            <span className="font-bold">Add task</span> at the bottom of a column.
           </span>
         </div>
       )}
