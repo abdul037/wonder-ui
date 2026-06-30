@@ -68,7 +68,7 @@ const avatars = [
   "https://lh3.googleusercontent.com/aida-public/AB6AXuA31jLBDsyBmkwvlb6i1BojUBtY7ANN8jTf3Q_ZZrEBiPQ1WO_g6xKdaYAVjXftC7Ha6ukhUGe3PmPWamNpxtyUd8NwU876zn23ID0335k1uXLiv254XeVMc7uQXAgQrbTf93sfOsj7NrCKCGld2BzVkOjCaa-9bP65TMh8mPIXLjodZGr6bAQ6EmTz9etluht4OtR_7XsIt1RHmIDO5uxFZg6PgXjcx8sUOXHATWEIL0hhaXrU44sU6kHPqoUe_38E-TEGhE6fWSkU",
 ];
 
-export const projects: Project[] = [
+const baseProjects = [
   {
     id: "fero-auto-plan",
     name: "Fero Auto-Plan Enhancement",
@@ -238,7 +238,109 @@ export const projects: Project[] = [
       { date: "AUG 15", title: "Logistics Pilot", complete: false },
     ],
   },
-];
+] as const;
+
+type ScmExtras = {
+  techOwner: Person;
+  businessOwner: Person;
+  currentlyWith: Person;
+  enhancementLog: { date: string; entry: string }[];
+  latestUpdate: UpdateEntry;
+  tasks: Task[];
+};
+
+const p = (name: string): Person => ({
+  name,
+  initials: name
+    .split(" ")
+    .map((s) => s[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase(),
+});
+
+const scmExtras: Record<string, ScmExtras> = {
+  "fero-auto-plan": {
+    techOwner: p("Sarah Jenkins"),
+    businessOwner: p("Jonathan Davis"),
+    currentlyWith: p("Sarah Jenkins"),
+    latestUpdate: { text: "Waiting on vendor OAuth credentials handoff.", at: "2026-06-30T07:12:00Z" },
+    enhancementLog: [
+      { date: "2026-06-28", entry: "Telemetry schema v2 finalized with vendor." },
+      { date: "2026-06-20", entry: "Infrastructure baseline approved by ARB." },
+    ],
+    tasks: [
+      { id: "T-4901", name: "API Integration Layer", type: "Integration", inSprint: true, sprint: "Sprint 24", status: "Blocked", currentlyWith: p("Sarah Jenkins"), techOwner: p("Sarah Jenkins"), businessOwner: p("Jonathan Davis"), latestUpdate: { text: "OAuth handshake blocked on vendor key.", at: "2026-06-30T07:12:00Z" } },
+      { id: "T-4902", name: "Telemetry Schema v2", type: "Enhancement", inSprint: true, sprint: "Sprint 24", status: "In Progress", currentlyWith: p("Devon Park"), techOwner: p("Sarah Jenkins"), businessOwner: p("Jonathan Davis"), latestUpdate: { text: "Schema migration script merged.", at: "2026-06-29T15:40:00Z" } },
+      { id: "T-4903", name: "Routing Heuristics Tuning", type: "Enhancement", inSprint: false, status: "On Track", currentlyWith: p("Hana Patel"), techOwner: p("Hana Patel"), businessOwner: p("Jonathan Davis"), latestUpdate: { text: "Backtesting on Q1 historical loads.", at: "2026-06-27T12:00:00Z" } },
+    ],
+  },
+  "bulk-weighscale": {
+    techOwner: p("Marcus Vega"),
+    businessOwner: p("Priya Raman"),
+    currentlyWith: p("Marcus Vega"),
+    latestUpdate: { text: "UAT round 3 — 92% pass rate.", at: "2026-06-30T04:00:00Z" },
+    enhancementLog: [
+      { date: "2026-06-20", entry: "UAT round 3 kicked off across 14 DCs." },
+      { date: "2026-06-02", entry: "Pilot expansion to 4 DCs." },
+    ],
+    tasks: [
+      { id: "T-4811", name: "UAT Testing Round 3", type: "Integration", inSprint: true, sprint: "Sprint 24", status: "In Progress", currentlyWith: p("Marcus Vega"), techOwner: p("Marcus Vega"), businessOwner: p("Priya Raman"), latestUpdate: { text: "Reconciliation deltas at 0.4%.", at: "2026-06-30T04:00:00Z" } },
+      { id: "T-4812", name: "ERP Cutover Plan", type: "Strategic", inSprint: true, sprint: "Sprint 24", status: "On Track", currentlyWith: p("Priya Raman"), techOwner: p("Marcus Vega"), businessOwner: p("Priya Raman"), latestUpdate: { text: "Change board review scheduled.", at: "2026-06-29T18:30:00Z" } },
+    ],
+  },
+  "driver-app-ocr": {
+    techOwner: p("Devon Park"),
+    businessOwner: p("Lena Ortiz"),
+    currentlyWith: p("Devon Park"),
+    latestUpdate: { text: "Benchmarking 3 OCR libraries on-device.", at: "2026-06-29T09:20:00Z" },
+    enhancementLog: [{ date: "2026-06-24", entry: "Discovery kickoff with driver ops." }],
+    tasks: [
+      { id: "T-4955", name: "OCR Library Benchmark", type: "Discovery", inSprint: true, sprint: "Sprint 25", status: "On Track", currentlyWith: p("Devon Park"), techOwner: p("Devon Park"), businessOwner: p("Lena Ortiz"), latestUpdate: { text: "TensorFlow Lite leads on latency.", at: "2026-06-29T09:20:00Z" } },
+      { id: "T-4956", name: "Driver UX Flow Mockups", type: "Discovery", inSprint: false, status: "On Track", currentlyWith: p("Mark Stein"), techOwner: p("Devon Park"), businessOwner: p("Lena Ortiz"), latestUpdate: { text: "Lo-fi mocks circulated for feedback.", at: "2026-06-26T13:00:00Z" } },
+    ],
+  },
+  "data-stream-2": {
+    techOwner: p("Hana Patel"),
+    businessOwner: p("Eli Chen"),
+    currentlyWith: p("Hana Patel"),
+    latestUpdate: { text: "Canary consumers validating in staging.", at: "2026-06-30T01:15:00Z" },
+    enhancementLog: [{ date: "2026-06-18", entry: "Schema registry live in staging." }],
+    tasks: [
+      { id: "T-1233", name: "Validation Schema Update", type: "Enhancement", inSprint: true, sprint: "Sprint 24", status: "In Progress", currentlyWith: p("Hana Patel"), techOwner: p("Hana Patel"), businessOwner: p("Eli Chen"), latestUpdate: { text: "Additive fields rolled to canary.", at: "2026-06-30T01:15:00Z" } },
+      { id: "T-1234", name: "Consumer Migration Guide", type: "Enhancement", inSprint: false, status: "On Track", currentlyWith: p("Eli Chen"), techOwner: p("Hana Patel"), businessOwner: p("Eli Chen"), latestUpdate: { text: "Draft shared with platform teams.", at: "2026-06-28T11:00:00Z" } },
+    ],
+  },
+  "experience-portal": {
+    techOwner: p("Mark Stein"),
+    businessOwner: p("Mark Stein"),
+    currentlyWith: p("Mark Stein"),
+    latestUpdate: { text: "Awaiting design feedback from leadership.", at: "2026-06-29T17:00:00Z" },
+    enhancementLog: [{ date: "2026-06-12", entry: "Hi-fi mocks delivered to stakeholders." }],
+    tasks: [
+      { id: "T-4977", name: "Profile Redesign", type: "Enhancement", inSprint: true, sprint: "Sprint 25", status: "Delayed", currentlyWith: p("Mark Stein"), techOwner: p("Mark Stein"), businessOwner: p("Mark Stein"), latestUpdate: { text: "Feedback delayed by quarterly offsite.", at: "2026-06-29T17:00:00Z" } },
+    ],
+  },
+  "global-expansion": {
+    techOwner: p("Anika Rao"),
+    businessOwner: p("Marcus Sterling"),
+    currentlyWith: p("Anika Rao"),
+    latestUpdate: { text: "Entity registration filings in progress (SG, VN).", at: "2026-06-30T06:45:00Z" },
+    enhancementLog: [
+      { date: "2026-06-22", entry: "Entity registration kickoff in SG and VN." },
+      { date: "2026-06-01", entry: "Market analysis ratified." },
+    ],
+    tasks: [
+      { id: "T-0014", name: "Phase 4: Entity Registration", type: "Strategic", inSprint: true, sprint: "Sprint 24", status: "In Progress", currentlyWith: p("Anika Rao"), techOwner: p("Anika Rao"), businessOwner: p("Marcus Sterling"), latestUpdate: { text: "Filings in progress in SG and VN.", at: "2026-06-30T06:45:00Z" } },
+      { id: "T-0015", name: "Logistics Pilot Plan", type: "Strategic", inSprint: false, status: "On Track", currentlyWith: p("Sarah Jenkins"), techOwner: p("Sarah Jenkins"), businessOwner: p("Marcus Sterling"), latestUpdate: { text: "Vendor shortlist circulated.", at: "2026-06-26T10:30:00Z" } },
+    ],
+  },
+};
+
+export const projects: Project[] = baseProjects.map((b) => ({
+  ...(b as unknown as Omit<Project, keyof ScmExtras>),
+  ...scmExtras[b.id],
+}));
 
 export const getProject = (id: string) => projects.find((p) => p.id === id);
 
