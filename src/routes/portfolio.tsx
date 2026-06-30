@@ -82,24 +82,11 @@ function StatusPill({ s }: { s: Status }) {
   );
 }
 
-function SprintPill({ task }: { task: Task }) {
-  if (!task.inSprint) {
-    return <span className="text-[10px] uppercase tracking-wide text-on-surface-variant">Backlog</span>;
-  }
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-[10px] font-bold uppercase">
-      <span className="material-symbols-outlined text-[12px]">flag</span>
-      {task.sprint ?? "In Sprint"}
-    </span>
-  );
-}
-
 function PortfolioIndex() {
   const [view, setView] = useState<View>("list");
   const [scope, setScope] = useState<Scope>("projects");
   const [wsFilter, setWsFilter] = useState<Workstream | "ALL">("ALL");
   const [statusFilter, setStatusFilter] = useState<Status | "ALL">("ALL");
-  const [sprintFilter, setSprintFilter] = useState<string>("ALL");
   const [query, setQuery] = useState("");
   const isAdmin = useIsAdmin();
   useDataVersion();
@@ -125,19 +112,11 @@ function PortfolioIndex() {
     }
   };
 
-  const sprints = useMemo(() => {
-    const s = new Set<string>();
-    projects.forEach((p) => p.tasks.forEach((t) => t.sprint && s.add(t.sprint)));
-    return ["ALL", ...Array.from(s).sort()];
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projects.length]);
-
   const filteredProjects = useMemo(() => {
     const q = query.trim().toLowerCase();
     return projects.filter((p) => {
       if (wsFilter !== "ALL" && p.workstream !== wsFilter) return false;
       if (statusFilter !== "ALL" && p.status !== statusFilter) return false;
-      if (sprintFilter !== "ALL" && !p.tasks.some((t) => t.sprint === sprintFilter)) return false;
       if (!q) return true;
       return (
         p.name.toLowerCase().includes(q) ||
@@ -146,7 +125,7 @@ function PortfolioIndex() {
         p.tasks.some((t) => t.name.toLowerCase().includes(q) || t.id.toLowerCase().includes(q))
       );
     });
-  }, [wsFilter, statusFilter, sprintFilter, query]);
+  }, [wsFilter, statusFilter, query]);
 
   const filteredTasks: TaskRow[] = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -155,7 +134,6 @@ function PortfolioIndex() {
       if (wsFilter !== "ALL" && p.workstream !== wsFilter) return;
       p.tasks.forEach((task) => {
         if (statusFilter !== "ALL" && task.status !== statusFilter) return;
-        if (sprintFilter !== "ALL" && task.sprint !== sprintFilter) return;
         if (q) {
           const hay = `${p.name} ${task.name} ${task.id} ${task.techOwner.name} ${task.businessOwner.name} ${task.currentlyWith.name}`.toLowerCase();
           if (!hay.includes(q)) return;
@@ -164,7 +142,7 @@ function PortfolioIndex() {
       });
     });
     return rows;
-  }, [wsFilter, statusFilter, sprintFilter, query]);
+  }, [wsFilter, statusFilter, query]);
 
   return (
     <AppShell>
@@ -260,15 +238,6 @@ function PortfolioIndex() {
               <option key={s} value={s}>{s === "ALL" ? "All statuses" : s}</option>
             ))}
           </select>
-          <select
-            value={sprintFilter}
-            onChange={(e) => setSprintFilter(e.target.value)}
-            className="bg-surface-container-low border border-border-subtle rounded-lg px-3 py-2 text-xs"
-          >
-            {sprints.map((s) => (
-              <option key={s} value={s}>{s === "ALL" ? "All sprints" : s}</option>
-            ))}
-          </select>
         </div>
 
         {view === "list" ? (
@@ -350,7 +319,7 @@ function ProjectsTable({ rows, isAdmin, onEdit, expanded, onToggle, onEditTask, 
             <tr className="bg-surface-container-low border-b border-border-subtle text-on-surface-variant text-xs">
               <th className="px-2 py-3 w-8" />
               {[
-                "Project", "Lead Task", "Task ID", "Type", "Sprint", "Status",
+                "Project", "Lead Task", "Task ID", "Type", "Status",
                 "Currently With", "Tech Owner", "Business Owner", "Log", "Latest Update", "Workstream",
               ].map((h) => (
                 <th key={h} className="px-4 py-3 font-medium whitespace-nowrap">{h}</th>
@@ -387,7 +356,6 @@ function ProjectsTable({ rows, isAdmin, onEdit, expanded, onToggle, onEditTask, 
                   <td className="px-4 py-4">{lead?.name ?? "—"}</td>
                   <td className="px-4 py-4 font-mono text-xs text-on-surface-variant">{lead?.id ?? p.eid}</td>
                   <td className="px-4 py-4 text-xs">{lead?.type ?? p.type}</td>
-                  <td className="px-4 py-4">{lead ? <SprintPill task={lead} /> : "—"}</td>
                   <td className="px-4 py-4"><StatusPill s={p.status} /></td>
                   <td className="px-4 py-4"><div className="flex items-center gap-2"><Avatar person={p.currentlyWith} /><span className="text-xs">{p.currentlyWith.name}</span></div></td>
                   <td className="px-4 py-4"><div className="flex items-center gap-2"><Avatar person={p.techOwner} /><span className="text-xs">{p.techOwner.name}</span></div></td>
@@ -418,7 +386,7 @@ function ProjectsTable({ rows, isAdmin, onEdit, expanded, onToggle, onEditTask, 
                 {isOpen && (
                   <tr key={`${p.id}-drill`} className="bg-surface-container-lowest">
                     <td />
-                    <td colSpan={isAdmin ? 13 : 12} className="px-4 py-3">
+                    <td colSpan={isAdmin ? 12 : 11} className="px-4 py-3">
                       <TaskDrilldown
                         project={p}
                         isAdmin={isAdmin}
@@ -449,7 +417,7 @@ function TasksTable({ rows, isAdmin, onEditTask }: TaskListProps) {
           <thead>
             <tr className="bg-surface-container-low border-b border-border-subtle text-on-surface-variant text-xs">
               {[
-                "Project", "Task", "Task ID", "Type", "Sprint", "Status",
+                "Project", "Task", "Task ID", "Type", "Status",
                 "Currently With", "Tech Owner", "Business Owner", "Latest Update", "Workstream",
               ].map((h) => (
                 <th key={h} className="px-4 py-3 font-medium whitespace-nowrap">{h}</th>
@@ -468,7 +436,6 @@ function TasksTable({ rows, isAdmin, onEditTask }: TaskListProps) {
                 <td className="px-4 py-4 font-medium text-on-surface">{task.name}</td>
                 <td className="px-4 py-4 font-mono text-xs text-on-surface-variant">{task.id}</td>
                 <td className="px-4 py-4 text-xs">{task.type}</td>
-                <td className="px-4 py-4"><SprintPill task={task} /></td>
                 <td className="px-4 py-4"><StatusPill s={task.status} /></td>
                 <td className="px-4 py-4"><div className="flex items-center gap-2"><Avatar person={task.currentlyWith} /><span className="text-xs">{task.currentlyWith.name}</span></div></td>
                 <td className="px-4 py-4"><div className="flex items-center gap-2"><Avatar person={task.techOwner} /><span className="text-xs">{task.techOwner.name}</span></div></td>
@@ -541,7 +508,6 @@ function ProjectsGrid({ rows, isAdmin, onEdit, expanded, onToggle, onEditTask, o
               </div>
               <div className="flex flex-wrap gap-2">
                 <StatusPill s={p.status} />
-                {lead && <SprintPill task={lead} />}
                 <span className="text-[10px] uppercase tracking-wide bg-surface-container-low text-on-surface-variant px-2 py-0.5 rounded">{lead?.type ?? p.type}</span>
               </div>
               <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border-subtle">
@@ -631,7 +597,6 @@ function TasksGrid({ rows, isAdmin, onEditTask }: TaskListProps) {
             </div>
             <div className="flex flex-wrap gap-2">
               <StatusPill s={task.status} />
-              <SprintPill task={task} />
               <span className="text-[10px] uppercase tracking-wide bg-surface-container-low text-on-surface-variant px-2 py-0.5 rounded">{task.type}</span>
             </div>
             <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border-subtle">
@@ -722,7 +687,6 @@ function TaskDrilldown({
                 )}
               </div>
               <StatusPill s={t.status} />
-              <SprintPill task={t} />
               {!compact && (
                 <div className="flex items-center gap-1 w-28 shrink-0">
                   <Avatar person={t.currentlyWith} size={18} />
