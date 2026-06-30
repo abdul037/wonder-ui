@@ -319,42 +319,9 @@ function Dashboard() {
         {/* Portfolio health + Priority mix */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-surface-card border border-border-subtle rounded-xl p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-lg font-bold text-on-surface">Portfolio Health</h3>
-                <p className="text-xs text-on-surface-variant">Project status distribution · {metrics.total} projects in scope</p>
-              </div>
-              <div className="text-right">
-                <div className="flex items-center gap-1 justify-end">
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
-                    Avg Project Completion
-                  </p>
-                  <span
-                    className="material-symbols-outlined text-[14px] text-on-surface-variant cursor-help"
-                    title={
-                      avgMode === "simple"
-                        ? "Simple average: mean of each project's % complete in scope. Every project counted equally."
-                        : "Weighted average: each project's % complete weighted by its number of actions. Bigger projects move the needle more."
-                    }
-                  >
-                    info
-                  </span>
-                </div>
-                <p className="text-2xl font-black text-primary font-mono">{avgProgress}%</p>
-                <div className="inline-flex bg-surface-container p-0.5 rounded-md mt-1 text-[10px] font-bold">
-                  {(["simple", "weighted"] as const).map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => setAvgMode(m)}
-                      className={`px-2 py-0.5 rounded transition-colors ${
-                        avgMode === m ? "bg-surface-card text-primary shadow-sm" : "text-on-surface-variant"
-                      }`}
-                    >
-                      {m === "simple" ? "Simple" : "Weighted"}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <div className="mb-4">
+              <h3 className="text-lg font-bold text-on-surface">Portfolio Health</h3>
+              <p className="text-xs text-on-surface-variant">Project status distribution · {metrics.total} projects in scope</p>
             </div>
             <StatusBar counts={metrics.statusCounts} total={metrics.total} />
 
