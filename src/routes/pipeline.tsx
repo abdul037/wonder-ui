@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import {
@@ -11,6 +11,9 @@ import {
   type PipelineSource,
 } from "@/data/pipeline";
 import { workstreamFullName, type Workstream, type Priority } from "@/data/projects";
+import { useIsAdmin } from "@/lib/admin";
+import { useDataVersion } from "@/lib/store";
+import { PipelineEditDialog } from "@/components/admin-edit/PipelineEditDialog";
 
 export const Route = createFileRoute("/pipeline")({
   head: () => ({
@@ -43,10 +46,19 @@ const priColor: Record<Priority, string> = {
   Low: "status-low",
 };
 
-function ItemCard({ item }: { item: PipelineItem }) {
+function ItemCard({ item, isAdmin, onEdit }: { item: PipelineItem; isAdmin: boolean; onEdit: (i: PipelineItem) => void }) {
   const ws = item.workstream.toLowerCase();
   return (
-    <div className="bg-surface-card border border-border-subtle rounded-xl shadow-sm p-4 hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col gap-3">
+    <div className="bg-surface-card border border-border-subtle rounded-xl shadow-sm p-4 hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col gap-3 relative">
+      {isAdmin && (
+        <button
+          onClick={() => onEdit(item)}
+          title="Edit intake"
+          className="absolute top-2 right-2 text-primary bg-surface-card border border-border-subtle rounded-md p-1 shadow-sm hover:bg-primary/10"
+        >
+          <span className="material-symbols-outlined text-[14px]">edit</span>
+        </button>
+      )}
       <div className="flex items-center justify-between gap-2">
         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-workstream-${ws}/10 text-workstream-${ws}`}>
           {item.workstream}
@@ -88,18 +100,28 @@ function ItemCard({ item }: { item: PipelineItem }) {
           </p>
         </div>
       </div>
-      <Link
-        to="/admin"
-        className="text-[11px] font-bold text-primary hover:underline self-end inline-flex items-center gap-1"
-      >
-        Promote to Active
-        <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-      </Link>
+      {isAdmin ? (
+        <button
+          onClick={() => onEdit(item)}
+          className="text-[11px] font-bold text-primary hover:underline self-end inline-flex items-center gap-1"
+        >
+          Manage / Promote
+          <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+        </button>
+      ) : (
+        <span className="text-[10px] uppercase tracking-widest text-on-surface-variant self-end">
+          {item.stage}
+        </span>
+      )}
     </div>
   );
 }
 
 function PipelinePage() {
+  const isAdmin = useIsAdmin();
+  useDataVersion();
+  const [editing, setEditing] = useState<PipelineItem | null>(null);
+  const [creating, setCreating] = useState(false);
   const [view, setView] = useState<"board" | "list">("board");
   const [ws, setWs] = useState<(typeof ALL_WS)[number]>("ALL");
   const [stage, setStage] = useState<(typeof stages)[number]>("ALL");
@@ -146,13 +168,15 @@ function PipelinePage() {
                 </button>
               ))}
             </div>
-            <Link
-              to="/admin"
-              className="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:opacity-90"
-            >
-              <span className="material-symbols-outlined text-[16px]">add</span>
-              New intake
-            </Link>
+            {isAdmin && (
+              <button
+                onClick={() => setCreating(true)}
+                className="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:opacity-90"
+              >
+                <span className="material-symbols-outlined text-[16px]">add</span>
+                New intake
+              </button>
+            )}
           </div>
         </header>
 
@@ -188,7 +212,7 @@ function PipelinePage() {
                       </div>
                     )}
                     {colItems.map((i) => (
-                      <ItemCard key={i.id} item={i} />
+                      <ItemCard key={i.id} item={i} isAdmin={isAdmin} onEdit={setEditing} />
                     ))}
                   </div>
                 </div>
@@ -209,6 +233,7 @@ function PipelinePage() {
                     <th className="text-left font-bold px-3 py-2.5">Source</th>
                     <th className="text-left font-bold px-3 py-2.5">Owners</th>
                     <th className="text-left font-bold px-3 py-2.5">Expected start</th>
+                    {isAdmin && <th className="px-3 py-2.5" />}
                   </tr>
                 </thead>
                 <tbody>
@@ -251,12 +276,23 @@ function PipelinePage() {
                         <td className="px-3 py-2.5 font-mono text-[11px] text-on-surface">
                           {new Date(i.expectedStart).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                         </td>
+                        {isAdmin && (
+                          <td className="px-3 py-2.5">
+                            <button
+                              onClick={() => setEditing(i)}
+                              className="text-primary hover:bg-primary/10 rounded p-1"
+                              title="Edit intake"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">edit</span>
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
                   {scoped.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="px-4 py-6 text-center text-on-surface-variant">
+                      <td colSpan={isAdmin ? 9 : 8} className="px-4 py-6 text-center text-on-surface-variant">
                         No intake items match the current filters.
                       </td>
                     </tr>
@@ -267,6 +303,14 @@ function PipelinePage() {
           </section>
         )}
       </div>
+      <PipelineEditDialog
+        open={!!editing || creating}
+        onClose={() => {
+          setEditing(null);
+          setCreating(false);
+        }}
+        item={editing}
+      />
     </AppShell>
   );
 }
