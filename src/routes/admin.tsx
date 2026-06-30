@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { projects as seedProjects, type Project, type Status, type Workstream, type Priority, type Task } from "@/data/projects";
 import { updates as seedUpdates, type UpdateEntry } from "@/data/newsletter";
+import { ImportWizard } from "@/components/ImportWizard";
 import {
   pipelineItems as seedPipeline,
   pipelineStages,
@@ -27,7 +28,7 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
-type TabKey = "projects" | "tasks" | "logs" | "newsletter" | "pipeline";
+type TabKey = "projects" | "tasks" | "logs" | "newsletter" | "pipeline" | "import";
 
 const tabs: { key: TabKey; label: string; icon: string; desc: string }[] = [
   { key: "projects", label: "Projects", icon: "folder_special", desc: "Manage project info, status, and owners" },
@@ -35,6 +36,7 @@ const tabs: { key: TabKey; label: string; icon: string; desc: string }[] = [
   { key: "pipeline", label: "Pipeline", icon: "pending_actions", desc: "Manage intake — promote to active projects" },
   { key: "logs", label: "Enhancement Log", icon: "history_edu", desc: "Append timeline entries per project" },
   { key: "newsletter", label: "Newsletter", icon: "campaign", desc: "Compose and publish product updates" },
+  { key: "import", label: "Import Data", icon: "upload_file", desc: "Bulk upload projects, tasks, and milestones" },
 ];
 
 const statuses: Status[] = ["On Track", "In Progress", "Blocked", "Delayed", "Completed"];
@@ -152,6 +154,7 @@ function AdminPage() {
                 }}
               />
             )}
+            {tab === "import" && <ImportWizard />}
           </section>
         </div>
       </div>
