@@ -113,24 +113,36 @@ function AdminPage() {
                 items={allPipeline}
                 onChange={setAllPipeline}
                 onPromote={(item) => {
+                  const today = new Date().toISOString().slice(0, 10);
                   const promoted: Project = {
                     id: `p-${Date.now()}`,
                     eid: item.id,
                     name: item.name,
+                    taskName: item.name,
                     description: item.description,
                     workstream: item.workstream,
+                    type: "Strategic",
                     priority: item.priority,
                     status: "On Track",
+                    progress: 0,
                     progressLabel: "Discovery",
                     techStack: [],
+                    updatedAgo: "just now",
+                    team: [item.techOwner.name, item.businessOwner.name],
+                    primaryStakeholder: { name: item.businessOwner.name, role: "Business Owner", initials: item.businessOwner.initials },
+                    owner: item.techOwner.name,
+                    summary: item.description,
+                    targetDate: item.expectedStart,
+                    estimatedHours: item.effort === "High" ? 800 : item.effort === "Medium" ? 400 : 160,
+                    executiveUpdate: `Newly promoted from pipeline intake ${item.id}. Kickoff scheduled for ${item.expectedStart}.`,
                     techOwner: item.techOwner,
                     businessOwner: item.businessOwner,
                     currentlyWith: item.techOwner,
                     tasks: [],
-                    timeline: [],
+                    timeline: [{ date: today, title: "Promoted from pipeline", complete: true }],
                     blockers: [],
                     enhancementLog: [
-                      { date: new Date().toISOString().slice(0, 10), entry: `Promoted from pipeline intake ${item.id}.` },
+                      { date: today, entry: `Promoted from pipeline intake ${item.id}.` },
                     ],
                     latestUpdate: { text: `Project promoted from pipeline.`, at: new Date().toISOString() },
                   };
