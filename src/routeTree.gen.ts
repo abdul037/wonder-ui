@@ -18,7 +18,6 @@ import { Route as PortfolioRouteImport } from './routes/portfolio'
 import { Route as PipelineRouteImport } from './routes/pipeline'
 import { Route as NewsletterRouteImport } from './routes/newsletter'
 import { Route as ImportRouteImport } from './routes/import'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PortfolioProjectIdRouteImport } from './routes/portfolio.$projectId'
 
@@ -67,11 +66,6 @@ const ImportRoute = ImportRouteImport.update({
   path: '/import',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -85,7 +79,6 @@ const PortfolioProjectIdRoute = PortfolioProjectIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/import': typeof ImportRoute
   '/newsletter': typeof NewsletterRoute
   '/pipeline': typeof PipelineRoute
@@ -99,7 +92,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/import': typeof ImportRoute
   '/newsletter': typeof NewsletterRoute
   '/pipeline': typeof PipelineRoute
@@ -114,7 +106,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/import': typeof ImportRoute
   '/newsletter': typeof NewsletterRoute
   '/pipeline': typeof PipelineRoute
@@ -130,7 +121,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/admin'
     | '/import'
     | '/newsletter'
     | '/pipeline'
@@ -144,7 +134,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
     | '/import'
     | '/newsletter'
     | '/pipeline'
@@ -158,7 +147,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/admin'
     | '/import'
     | '/newsletter'
     | '/pipeline'
@@ -173,7 +161,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
   ImportRoute: typeof ImportRoute
   NewsletterRoute: typeof NewsletterRoute
   PipelineRoute: typeof PipelineRoute
@@ -250,13 +237,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ImportRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -288,7 +268,6 @@ const PortfolioRouteWithChildren = PortfolioRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
   ImportRoute: ImportRoute,
   NewsletterRoute: NewsletterRoute,
   PipelineRoute: PipelineRoute,
