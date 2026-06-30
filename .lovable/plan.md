@@ -1,62 +1,24 @@
-## Phase 5 — Dashboard UI Polish & Workstream Clarity
+## Remove all progress percentages from the dashboard
 
-### 1. Workstream naming (full names everywhere)
-Update the workstream registry in `src/data/projects.ts` so each code maps to its official long name:
-- **OX** — Operation Excellence
-- **DW** — Data Warehouse / PowerBI
-- **EX** — Employee Experience
-- **AU** — Asset Utilization
+### Goal
+Strip every progress percentage indicator from the dashboard so the page feels cleaner and avoids the confusion the user flagged around "Avg Project Completion".
 
-Cascade these names through the Dashboard, Portfolio, Sprint Board, Roadmap, Newsletter, and Admin pages (badges show short code, tooltips/labels show full name).
+### Scope
+- Remove the top-level **"Avg Project Completion"** KPI tile and its Simple/Weighted toggle from the KPI grid.
+- Remove the circular/arc progress dials and percentage labels next to each workstream in the **By Workstream** row.
+- Keep the workstream names (Operation Excellence, Employee Experience, Asset Utilization, Data Warehouse / PowerBI) and their project/action counts visible.
+- Leave all other dashboard panels untouched (KPI tiles, Portfolio Health, Priority Mix, Live Actions, Owner Workload, Critical Blockers, Milestones, SCM Pulse).
 
-### 2. Clarify the "Avg Progress" metric
-Today the dashboard shows "Avg Progress %" with no explanation. It is the **mean of each project's `progress` field within the selected workstream filter** (simple average, not weighted).
+### Files to edit
+- `src/routes/index.tsx` — the main dashboard component. Identify the "Avg Project Completion" KPI card and the By-Workstream progress dials, then remove/rework those JSX blocks.
+- `src/styles.css` — optionally clean up any utility classes that were added only for the progress dials or toggle if they become orphaned.
 
-Two improvements:
-- **Rename + tooltip**: relabel to "Avg Project Completion" with an info-icon tooltip explaining "Mean of progress across all projects in scope. Each project counted equally."
-- **Optional toggle**: small segmented control to switch between *Simple Avg* and *Weighted by # of actions* so executives can see both views.
-
-### 3. Dashboard UI enhancement (apply Design4 reference)
-Rework `src/routes/index.tsx` to match the strategic-report aesthetic from the shared design file:
-
-```text
-┌──────────────────────────────────────────────────────────┐
-│ Hero strip: greeting + scope filter + last-refresh chip  │
-├──────────────────────────────────────────────────────────┤
-│ Bento KPI grid (6 tiles, asymmetric, large numerals)     │
-│  ┌──────────┬───────┬───────┐                            │
-│  │ Major    │ Open  │ Done  │                            │
-│  │ Projects │ Acts  │ Acts  │                            │
-│  ├──────────┼───────┼───────┤                            │
-│  │ In Prog  │ High  │ Block │                            │
-│  └──────────┴───────┴───────┘                            │
-├────────────────────────┬─────────────────────────────────┤
-│ Portfolio Health bar   │ Workstream Performance          │
-│ + status legend        │ (full names, progress rails,    │
-│                        │  delta vs last week)            │
-├────────────────────────┼─────────────────────────────────┤
-│ Live Actions Feed      │ Owner Workload leaderboard      │
-├────────────────────────┴─────────────────────────────────┤
-│ Critical Blockers panel (red rail, CTA to portfolio)     │
-├──────────────────────────────────────────────────────────┤
-│ Upcoming Milestones timeline | SCM Tech Pulse strip      │
-└──────────────────────────────────────────────────────────┘
-```
-
-Visual upgrades:
-- Workstream tiles get the **full name as title**, short code as chip, with a circular progress dial + sparkline-style delta.
-- KPI tiles use larger display numerals (JetBrains Mono), micro-trend arrows, and subtle gradient surfaces per status color.
-- Portfolio Health bar gets segment labels with counts on hover.
-- Live Actions Feed gets workstream rail color + status pill + relative time.
-- Critical Blockers card uses an accent border and "days blocked" badge.
-- Add a small "How metrics are computed" popover anchored at the top-right.
-
-### 4. Files touched
-- `src/data/projects.ts` — add `workstreamFullName` map / update existing meta.
-- `src/routes/index.tsx` — restructure KPIs, add tooltip + toggle, polish panels.
-- `src/components/AppShell.tsx` — sidebar shows full workstream names.
-- `src/styles.css` — bento grid utilities, dial styles, tooltip token.
-- (Optional) small `WorkstreamBadge` component for consistent code+name rendering.
+### How
+- In the KPI grid, delete the tile that renders the average completion value and the Simple/Weighted toggle. Re-balance the grid from 6 to 5 tiles if needed, or let the remaining tiles reflow.
+- In the By Workstream row, replace the circular dial + percentage with a simpler horizontal card that still shows full workstream name, status, and project/action counts.
+- Verify build passes and no unused imports/variables remain after the deletion.
 
 ### Out of scope
-No data model or business-logic changes beyond the avg-progress toggle. Other routes only get the workstream rename pass.
+- No changes to data model or calculations in `src/data/projects.ts`.
+- No changes to other routes (portfolio, sprint board, newsletter, admin, etc.).
+- No redesign of the Gulf Cryo branding yet (that is a later phase).
