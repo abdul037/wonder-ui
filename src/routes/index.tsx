@@ -98,12 +98,12 @@ function KpiCard({
         critical ? "border-l-4 border-l-status-critical" : ""
       }`}
     >
-      <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant leading-tight">{label}</p>
+      <p className="eyebrow leading-tight">{label}</p>
       <div className="flex items-end justify-between gap-2 mt-1">
-        <p className={`text-3xl font-black tracking-tight ${valueClass ?? (color ? `text-${color}` : "text-on-surface")}`}>
+        <p className={`kpi-num ${valueClass ?? (color ? `text-${color}` : "text-on-surface")}`}>
           {value}
         </p>
-        {caption && <p className="text-[10px] text-on-surface-variant pb-1 text-right">{caption}</p>}
+        {caption && <p className="text-[11px] text-on-surface-variant pb-1 text-right">{caption}</p>}
       </div>
       <div className="mt-2">
         <Sparkline kind={sparkline.kind} color={sparkline.color} />
