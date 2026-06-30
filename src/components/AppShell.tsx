@@ -30,8 +30,8 @@ function Sidebar({ pathname }: { pathname: string }) {
           </span>
         </div>
         <div>
-          <h1 className="text-lg font-black text-primary leading-tight">PMO Command</h1>
-          <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">Strategic Oversight</p>
+          <h1 className="text-lg font-black text-primary leading-tight">Supply Chain Tech Hub</h1>
+          <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">Projects · Tasks · Enhancements</p>
         </div>
       </Link>
       <nav className="flex-1 space-y-1">
