@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 
 export type ThemeMode = "light" | "dark";
 const KEY = "scm.theme";
@@ -28,8 +28,10 @@ export function toggleTheme() {
 }
 
 export function useTheme(): ThemeMode {
-  // Avoid hydration mismatch: render "light" on the server, swap on mount.
-  const mode = useSyncExternalStore(
+  // Server snapshot stays "light"; client snapshot reads the real value
+  // synchronously so the toggle button reflects state from the first paint.
+  // The <html suppressHydrationWarning> on RootShell tolerates the className diff.
+  return useSyncExternalStore(
     (cb) => {
       listeners.add(cb);
       return () => listeners.delete(cb);
@@ -37,12 +39,6 @@ export function useTheme(): ThemeMode {
     () => read(),
     () => "light" as ThemeMode,
   );
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-    applyToDom(read());
-  }, []);
-  return mounted ? mode : "light";
 }
 
 /** Inline script string that hydrates the .dark class before paint to prevent FOUC. */
