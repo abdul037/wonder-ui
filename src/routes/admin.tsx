@@ -13,7 +13,7 @@ export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
       { title: "Admin Workspace | Supply Chain Tech Hub" },
-      { name: "description", content: "Newsletter publishing and bulk data import for the SCM Tech Hub." },
+      { name: "description", content: "Tech Pulse publishing and bulk data import for the SCM Tech Hub." },
     ],
   }),
   component: AdminPage,
@@ -165,7 +165,7 @@ function NewsletterAdmin() {
       <div className="bg-surface-card border border-border-subtle rounded-xl shadow-sm overflow-hidden">
         <div className="p-5 border-b border-border-subtle">
           <h2 className="text-lg font-bold">Published Updates ({updates.length})</h2>
-          <p className="text-xs text-on-surface-variant">Posts appear in the SCM Tech Pulse newsletter feed.</p>
+          <p className="text-xs text-on-surface-variant">Posts appear in the SCM Tech Pulse feed.</p>
         </div>
         <ul className="divide-y divide-border-subtle">
           {updates.map((u) => (
