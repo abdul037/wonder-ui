@@ -14,7 +14,7 @@ export const Route = createFileRoute("/newsletter")({
         content:
           "Live updates from across the Supply Chain organization — releases, enhancements, blockers cleared, and what's shipping this week.",
       },
-      { property: "og:title", content: "SCM Tech Pulse — Supply Chain Tech Hub Newsletter" },
+      { property: "og:title", content: "SCM Tech Pulse — Supply Chain Tech Hub Feed" },
       {
         property: "og:description",
         content: "Operational and tech updates across OX, EX, AU, and DW workstreams.",
