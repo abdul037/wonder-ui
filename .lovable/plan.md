@@ -1,76 +1,48 @@
-# Complete Supply Chain Tech Hub — Phase 2 & 3
+# Where the checklist stands
 
-Phase 1 (rebrand + expanded Portfolio with List/Grid + Task IDs/Owners) is already shipped. This plan finishes the remaining two phases requested earlier: **Newsletter** and **Admin**, plus light polish to wire them into the shell.
+Completed in earlier phases:
+- Phase 1 — Rebrand to "Supply Chain Tech Hub" + expanded project/task data model with Task ID, Tech/Business Owners, "Currently With", Sprint flag, Enhancement Log, latest timestamped update; Portfolio page with Projects↔Tasks scope toggle, List/Grid views, search and workstream/status/sprint filters.
+- Phase 2 — Newsletter route (`/newsletter`) with KPI bento, featured updates, workstream digests, chronological feed; dashboard "Latest from SCM Tech Pulse" strip.
+- Phase 3 — Admin route (`/admin`) with tabs for Projects, Tasks, Enhancement Log, Newsletter (inline edit, add/remove, append log, compose update) wired with sonner toasts.
 
----
+Not yet done — what the 4 attached design files target:
 
-## Phase 2 — Newsletter (`/newsletter`)
+| File | Screen | Current route | Gap vs mock |
+|---|---|---|---|
+| Design1 | Sprint Board (Kanban) | `/sprint-board` | Mock has 7 columns (Backlog, Prioritized, In Current Sprint, In Progress, Blocked, UAT, Done), board toolbar with sprint title + sprint switcher + filters, blocked column styled critical, card chips for workstream + tech stack + priority + due. Current build has 5 columns and lighter toolbar. |
+| Design2 | Executive Dashboard | `/` | Mock has 6-KPI surgical grid (142 / 84 / 32 / 7 critical / 12 high / 14d avg), workstream filter bar with portfolio distribution, asymmetric project grid (OX/DW/AU large cards + EX portfolio-wide card + Blockers side card), FAB. Current dashboard is simpler. |
+| Design3 | Data Import Wizard | `/import` | Mock has 3-step stepper, 2-col layout: upload dropzone + selected file mockup + data mapping rows + preview/validate table on the left; instructions card + summary card on the right; toast overlay. Current page is a thinner stepper-only version. |
+| Design4 | Newsletter — Strategic Impact Report | `/newsletter` | Mock has hero, 4-card Impact Stats bento, four workstream enhancement sections (OX/EX/AU/DW) in bento grid, Visual Velocity Impact custom chart block, footer. Current newsletter has a feed/digest layout, not the bento/per-workstream report layout. |
 
-A live "SCM Tech Pulse" page where enhancements, releases, and product updates are broadcast.
+# Phase 4 plan — bring the 4 screens up to the mocks
 
-**Layout (single column, magazine-style):**
-- Hero band: issue number, publish date, "Subscribe" CTA (visual only).
-- KPI bento (4 cards): Live Enhancements, Shipped This Week, Active Sprints, Roadblockers Cleared — sourced from existing `projects.ts`.
-- Featured Update: large card with hero gradient, workstream tag, summary, "Read more".
-- Updates Feed: vertical timeline grouped by date, each entry shows workstream rail, title, body, linked project/task chips, author + timestamp.
-- Workstream Digest: 4-column grid (OX / EX / AU / DW) with bullet highlights per stream.
-- Footer CTA: "Submit an update" → links to `/admin`.
+Scope: visual + structural realignment to match the attached HTML. Reuse existing data in `src/data/projects.ts` and `src/data/newsletter.ts`; no schema changes, no backend. Keep "Supply Chain Tech Hub" branding (replace "PMO Command Center" copy from the mocks).
 
-**Data:** new `src/data/newsletter.ts` with `NewsletterIssue` and `UpdateEntry` types, seeded from existing project `latestUpdate` + `enhancementLog` so content stays consistent.
+1. `src/routes/sprint-board.tsx`
+   - Expand to 7 columns matching mock order; "Blocked" header in `text-status-critical`.
+   - Add board toolbar: sprint title, sprint switcher select, workstream filter chips, search.
+   - Task card: workstream tag, priority pill, tech stack icon row, due date, assignee avatar, blocked reason on Blocked cards.
 
----
+2. `src/routes/index.tsx` (Executive Dashboard)
+   - Replace top section with the 6-KPI surgical grid (Total / Active / Sprint / Critical-red / High-orange / Avg cycle).
+   - Add Workstream Filter / Portfolio Distribution bar.
+   - Asymmetric project grid: 3 large workstream cards (OX, DW, AU) + wide EX portfolio-impact card + side "Roadblocker / Quick Actions" card.
+   - Keep the "Latest from SCM Tech Pulse" preview strip below.
+   - Add floating action button.
 
-## Phase 3 — Admin (`/admin`)
+3. `src/routes/import.tsx`
+   - 2-column layout: left = upload dropzone with selected-file mock + Data Mapping rows (source → target select) + Preview & Validate table with row-status pills.
+   - Right = Instructions card + Summary card.
+   - Keep 3-step stepper at top; add sonner toast for "Mapping saved".
 
-Single internal workspace to manage all content surfaces. Presentational only (local state via `useState`, no backend) so it's a faithful UI prototype matching the rest of the app.
+4. `src/routes/newsletter.tsx`
+   - Rebuild as Strategic Impact Report: hero, 4-card Impact Stats bento, 2x2 workstream bento (OX/EX/AU/DW) with enhancement bullet lists from `newsletter.ts`, Visual Velocity Impact chart (CSS bars, no new lib), footer.
 
-**Structure:** left sub-nav inside the page with 4 tabs:
+## Technical notes
 
-1. **Projects** — table of all projects with inline-editable status / priority / owners, "New Project" dialog, delete confirm.
-2. **Tasks** — task table filtered by project, edit Task ID, type, sprint, currentlyWith, status; add/remove tasks.
-3. **Enhancement Log** — chronological list of log entries per project with an "Add Log Entry" form (workstream, title, body, author).
-4. **Newsletter / Product Updates** — composer (title, summary, body textarea, workstream multi-select, feature toggle, publish date) + list of existing entries with edit/delete.
+- Pure presentational refactor of 4 route files; no new packages, no data-model changes.
+- Use existing tokens in `src/styles.css` (workstream-ox/ex/au/dw, status-critical/high/medium/low). Add a few utility classes if needed (bento spans, kanban column min-width already present).
+- Material Symbols font already loaded in `__root.tsx`.
+- Verify `bun run build:dev` after each route edit.
 
-Each tab uses shadcn `Tabs`, `Table`, `Dialog`, `Input`, `Textarea`, `Select`, `Switch`, `Badge`. Toasts via `sonner` for save/delete feedback.
-
-**Auth note:** No real auth in this phase — page is reachable directly. We'll mark it "Internal" in the header. Real auth + persistence can come in a later phase if requested.
-
----
-
-## Shell + Polish
-
-- `AppShell.tsx`: add **Newsletter** (icon `campaign`) and **Admin** (icon `admin_panel_settings`) to sidebar; group "Workspace" vs "Manage".
-- `__root.tsx` / new route `head()`s: per-page titles + OG description.
-- Dashboard (`/`): add a compact "Latest from the Newsletter" strip linking to `/newsletter`.
-- Styles: reuse existing tokens — no new colors. Add `.timeline-rail` + `.kpi-bento` utilities to `src/styles.css`.
-
----
-
-## Files
-
-**New**
-- `src/routes/newsletter.tsx`
-- `src/routes/admin.tsx`
-- `src/data/newsletter.ts`
-- `src/components/newsletter/UpdateCard.tsx`
-- `src/components/newsletter/WorkstreamDigest.tsx`
-- `src/components/admin/ProjectsAdmin.tsx`
-- `src/components/admin/TasksAdmin.tsx`
-- `src/components/admin/LogsAdmin.tsx`
-- `src/components/admin/NewsletterAdmin.tsx`
-
-**Edited**
-- `src/components/AppShell.tsx` — sidebar entries + grouping
-- `src/routes/index.tsx` — newsletter strip
-- `src/styles.css` — small utility additions
-
----
-
-## Out of scope (call out for later phases)
-
-- Real persistence (Supabase tables for projects/tasks/logs/newsletter).
-- Auth + role-gating for `/admin`.
-- Email delivery of the newsletter.
-- File uploads / rich-text editor.
-
-Confirm and I'll build it.
+Out of scope for this phase: persistence/Supabase, real file upload, real charts library, Admin page changes (already shipped).
