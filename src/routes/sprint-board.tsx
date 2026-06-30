@@ -7,7 +7,6 @@ import {
   deriveTaskColumn,
   moveTaskColumn,
   createTask,
-  deleteTask,
 } from "@/lib/store";
 import { projects, type BoardColumn, type Project, type Task } from "@/data/projects";
 import { TaskEditDialog } from "@/components/admin-edit/TaskEditDialog";
