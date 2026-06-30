@@ -116,10 +116,14 @@ function CategoryCard({
   title,
   icon,
   items,
+  activeKey,
+  onToggle,
 }: {
   title: string;
   icon: string;
   items: { label: string; value: number; color: string }[];
+  activeKey?: string | null;
+  onToggle?: (label: string) => void;
 }) {
   const total = items.reduce((s, i) => s + i.value, 0) || 1;
   return (
@@ -129,17 +133,37 @@ function CategoryCard({
           <span className="material-symbols-outlined text-[16px] text-on-surface-variant">{icon}</span>
           <h3 className="text-xs font-bold uppercase tracking-wide text-on-surface">{title}</h3>
         </div>
-        <span className="text-[10px] font-mono text-on-surface-variant">{total}</span>
+        {activeKey ? (
+          <button
+            onClick={() => onToggle?.(activeKey)}
+            className="text-[10px] font-bold text-primary hover:underline"
+          >
+            Clear
+          </button>
+        ) : (
+          <span className="text-[10px] font-mono text-on-surface-variant">{total}</span>
+        )}
       </div>
       <div className="space-y-2">
         {items.map((it) => {
           const pct = Math.round((it.value / total) * 100);
+          const isActive = activeKey === it.label;
+          const dimmed = activeKey && !isActive;
           return (
-            <div key={it.label}>
+            <button
+              key={it.label}
+              type="button"
+              onClick={() => onToggle?.(it.label)}
+              className={`w-full text-left rounded-md px-2 py-1 -mx-2 transition-all ${
+                isActive
+                  ? `bg-${it.color}/10 ring-1 ring-${it.color}/40`
+                  : "hover:bg-surface-container"
+              } ${dimmed ? "opacity-50" : ""}`}
+            >
               <div className="flex items-center justify-between text-[11px] mb-1">
                 <div className="flex items-center gap-1.5">
                   <span className={`w-1.5 h-1.5 rounded-full bg-${it.color}`} />
-                  <span className="text-on-surface font-medium">{it.label}</span>
+                  <span className={`font-medium ${isActive ? `text-${it.color}` : "text-on-surface"}`}>{it.label}</span>
                 </div>
                 <span className="font-mono text-on-surface-variant">
                   {it.value}
@@ -149,7 +173,7 @@ function CategoryCard({
               <div className="h-1 rounded-full bg-surface-container overflow-hidden">
                 <div className={`h-full bg-${it.color}`} style={{ width: `${pct}%` }} />
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
