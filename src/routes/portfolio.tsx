@@ -136,8 +136,9 @@ function PortfolioIndex() {
       <div className="p-6 space-y-6">
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h2 className="text-4xl font-black text-primary">Projects &amp; Tasks</h2>
-            <p className="text-sm text-on-surface-variant mt-1">
+            <p className="eyebrow">Workstream Oversight</p>
+            <h2 className="page-title text-primary mt-1">Projects &amp; Tasks</h2>
+            <p className="text-xs text-on-surface-variant mt-1">
               Supply chain enhancements across workstreams — owners, sprint status, and live updates.
             </p>
           </div>
@@ -342,7 +343,7 @@ function TasksTable({ rows }: { rows: TaskRow[] }) {
 
 function ProjectsGrid({ rows }: { rows: Project[] }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-fr">
       {rows.map((p) => {
         const lead = p.tasks[0];
         return (
@@ -350,7 +351,7 @@ function ProjectsGrid({ rows }: { rows: Project[] }) {
             key={p.id}
             to="/portfolio/$projectId"
             params={{ projectId: p.id }}
-            className={`group bg-surface-card border border-border-subtle rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border-l-4 border-l-workstream-${p.workstream.toLowerCase()} card-hover-effect`}
+            className={`group bg-surface-card border border-border-subtle rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border-l-4 border-l-workstream-${p.workstream.toLowerCase()} card-hover-effect min-h-[240px] flex flex-col`}
           >
             <div className="p-5 space-y-3">
               <div className="flex items-start justify-between gap-2">

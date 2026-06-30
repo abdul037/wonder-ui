@@ -123,8 +123,8 @@ function PipelinePage() {
       <div className="px-8 py-8 space-y-6 pb-24">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-[11px] uppercase tracking-widest text-on-surface-variant font-bold">Demand · Intake</p>
-            <h1 className="text-2xl font-bold text-on-surface tracking-tight">Pipeline / Intake</h1>
+            <p className="eyebrow">Demand · Intake</p>
+            <h1 className="page-title">Pipeline / Intake</h1>
             <p className="text-xs text-on-surface-variant mt-1">
               {pipelineItems.length} expected projects across the four workstreams · waiting to be scoped, approved, or scheduled.
             </p>
@@ -173,17 +173,19 @@ function PipelinePage() {
               const colItems = scoped.filter((i) => i.stage === s);
               const color = pipelineStageColor[s];
               return (
-                <div key={s} className="bg-surface-container-low rounded-xl p-3 flex flex-col gap-3 min-h-[300px]">
+                <div key={s} className="bg-surface-container-low rounded-xl p-3 flex flex-col gap-3 min-h-[320px]">
                   <header className="flex items-center justify-between px-1">
                     <div className="flex items-center gap-2">
                       <span className={`w-2 h-2 rounded-full bg-${color}`} />
-                      <h2 className="text-xs font-bold uppercase tracking-widest text-on-surface">{s}</h2>
+                      <h2 className="eyebrow text-on-surface">{s}</h2>
                     </div>
                     <span className="font-mono text-[10px] text-on-surface-variant">{colItems.length}</span>
                   </header>
-                  <div className="space-y-3">
+                  <div className="space-y-3 flex-1">
                     {colItems.length === 0 && (
-                      <p className="text-[11px] text-on-surface-variant text-center py-8">No items.</p>
+                      <div className="border-2 border-dashed border-border-subtle rounded-lg py-10 px-3 text-center">
+                        <p className="text-[11px] text-on-surface-variant">No items in this stage.</p>
+                      </div>
                     )}
                     {colItems.map((i) => (
                       <ItemCard key={i.id} item={i} />

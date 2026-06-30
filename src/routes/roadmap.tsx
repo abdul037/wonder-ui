@@ -27,8 +27,9 @@ function Roadmap() {
       <div className="px-8 py-8 space-y-8">
         <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
           <div>
-            <h2 className="text-4xl font-black text-on-surface">Strategic Roadmap</h2>
-            <p className="text-on-surface-variant text-base mt-1">
+            <p className="eyebrow">Multi-Quarter View</p>
+            <h2 className="page-title mt-1">Strategic Roadmap</h2>
+            <p className="text-on-surface-variant text-xs mt-1">
               Quarterly view of cross-workstream initiatives and milestones.
             </p>
           </div>
@@ -44,6 +45,12 @@ function Roadmap() {
               </button>
             ))}
           </div>
+        </div>
+
+        <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-2.5 text-xs flex items-center gap-2 text-on-surface">
+          <span className="material-symbols-outlined text-primary text-[18px]">info</span>
+          For the full Muwahib readout (Active · BAU · Pipeline), see the
+          <a href="/unified-roadmap" className="text-primary font-semibold underline">Unified Roadmap</a>.
         </div>
 
         <div className="bg-surface-card border border-border-subtle rounded-xl overflow-hidden shadow-sm">
@@ -89,19 +96,19 @@ function Roadmap() {
           })}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {(["OX", "EX", "DW"] as const).map((ws) => {
             const w = ws.toLowerCase();
             return (
               <div
                 key={ws}
-                className={`bg-surface-card border border-border-subtle rounded-xl p-6 border-t-4 border-t-workstream-${w}`}
+                className={`bg-surface-card border border-border-subtle rounded-xl p-4 border-t-4 border-t-workstream-${w}`}
               >
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-widest">{workstreamLabel[ws]}</p>
-                <p className="text-3xl font-black mt-2">
+                <p className="eyebrow">{workstreamLabel[ws]}</p>
+                <p className="kpi-num mt-1.5">
                   {projects.filter((p) => p.workstream === ws).length}
                 </p>
-                <p className="text-xs text-on-surface-variant mt-1">active initiatives</p>
+                <p className="text-[11px] text-on-surface-variant mt-0.5">active initiatives</p>
               </div>
             );
           })}
