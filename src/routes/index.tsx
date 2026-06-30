@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { projects, workstreamLabel, type Workstream } from "@/data/projects";
+import { updates as newsUpdates } from "@/data/newsletter";
+import { relativeTime } from "@/lib/time";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -364,6 +366,32 @@ function Dashboard() {
             </Link>
           </div>
         </div>
+
+        <section className="bg-surface-card border border-border-subtle rounded-xl p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary">campaign</span>
+              <h3 className="text-xl font-bold text-on-surface">Latest from SCM Tech Pulse</h3>
+            </div>
+            <Link to="/newsletter" className="text-primary text-xs font-bold flex items-center gap-1 hover:underline">
+              Open Newsletter <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {newsUpdates.slice(0, 3).map((u) => (
+              <div key={u.id} className="border border-border-subtle rounded-lg p-4 hover:border-primary/50 transition-colors">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-workstream-${u.workstream.toLowerCase()}/10 text-workstream-${u.workstream.toLowerCase()}`}>
+                    {u.workstream}
+                  </span>
+                  <span className="text-[11px] text-on-surface-variant">{relativeTime(u.publishedAt)}</span>
+                </div>
+                <p className="font-bold text-sm text-on-surface line-clamp-2">{u.title}</p>
+                <p className="text-xs text-on-surface-variant mt-1 line-clamp-2">{u.summary}</p>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </AppShell>
   );
