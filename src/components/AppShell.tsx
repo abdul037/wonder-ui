@@ -1,6 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { setAdminMode, useIsAdmin } from "@/lib/admin";
+import { useTheme, toggleTheme } from "@/lib/theme";
 
 const navItems = [
   { to: "/", icon: "dashboard", label: "Dashboard" },
@@ -74,11 +75,9 @@ function Sidebar({ pathname }: { pathname: string }) {
 }
 
 function TopBar() {
-  const [dark, setDark] = useState(false);
   const isAdmin = useIsAdmin();
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-  }, [dark]);
+  const theme = useTheme();
+  const dark = theme === "dark";
   return (
     <header className="flex justify-between items-center w-full px-5 py-2 h-14 bg-surface-container-lowest border-b border-border-subtle sticky top-0 z-20">
       <div className="flex items-center gap-6 flex-1">
@@ -118,9 +117,10 @@ function TopBar() {
         </button>
         <div className="flex items-center gap-1">
           <button
-            onClick={() => setDark((d) => !d)}
+            onClick={toggleTheme}
             className="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors"
-            aria-label="Toggle theme"
+            aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+            title={dark ? "Light mode" : "Dark mode"}
           >
             <Icon name={dark ? "light_mode" : "dark_mode"} />
           </button>
