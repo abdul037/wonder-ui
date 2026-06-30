@@ -298,8 +298,15 @@ function ProjectCard({ project }: { project: Project }) {
 function Dashboard() {
   const [range, setRange] = useState<Range>("Daily");
   const [activeWs, setActiveWs] = useState<Workstream | "ALL">("ALL");
+  const [filters, setFilters] = useState<{
+    taskStatus: string | null;
+    effort: string | null;
+    issuePriority: string | null;
+    release: string | null;
+  }>({ taskStatus: null, effort: null, issuePriority: null, release: null });
 
-  const scoped = activeWs === "ALL" ? projects : projects.filter((p) => p.workstream === activeWs);
+  const toggle = (key: keyof typeof filters) => (label: string) =>
+    setFilters((f) => ({ ...f, [key]: f[key] === label ? null : label }));
 
   const metrics = useMemo(() => {
     const allTasks = projects.flatMap((p) => p.tasks);
@@ -315,33 +322,72 @@ function Dashboard() {
     return { totalProjects, totalActions, inSprint, blocked, highPriority };
   }, []);
 
-  // Categorical breakdowns (deterministic from existing data)
+  // Per-task attributes (deterministic) — used for both breakdowns and filtering
+  const taskAttrs = useMemo(() => {
+    const map = new Map<
+      string,
+      { projectId: string; taskStatus: string; effort: string; issuePriority: string; release: string }
+    >();
+    let i = 0;
+    projects.forEach((p) =>
+      p.tasks.forEach((t) => {
+        const taskStatus =
+          t.status === "Completed"
+            ? "Closed"
+            : t.status === "In Progress"
+            ? "In Progress"
+            : t.status === "Blocked" || t.status === "Delayed"
+            ? "On Hold"
+            : "Open";
+        map.set(t.id, {
+          projectId: p.id,
+          taskStatus,
+          effort: (["Low", "Medium", "High"] as const)[i % 3],
+          issuePriority: (["P1", "P2", "P3"] as const)[(i + 1) % 3],
+          release: i % 2 === 0 ? "Web App" : "Android App",
+        });
+        i++;
+      })
+    );
+    return map;
+  }, []);
+
+  // Filter project list by workstream + categorical filters (project must have at least one matching task)
+  const scoped = useMemo(() => {
+    const wsFiltered = activeWs === "ALL" ? projects : projects.filter((p) => p.workstream === activeWs);
+    const hasCatFilter = Object.values(filters).some(Boolean);
+    if (!hasCatFilter) return wsFiltered;
+    return wsFiltered.filter((p) =>
+      p.tasks.some((t) => {
+        const a = taskAttrs.get(t.id);
+        if (!a) return false;
+        return (
+          (!filters.taskStatus || a.taskStatus === filters.taskStatus) &&
+          (!filters.effort || a.effort === filters.effort) &&
+          (!filters.issuePriority || a.issuePriority === filters.issuePriority) &&
+          (!filters.release || a.release === filters.release)
+        );
+      })
+    );
+  }, [activeWs, filters, taskAttrs]);
+
+  // Categorical breakdowns — counted against current scope (excluding own filter for context)
   const categories = useMemo(() => {
-    const allTasks = projects.flatMap((p) => p.tasks);
+    const allTasks = scoped.flatMap((p) => p.tasks);
     const taskStatus = { Closed: 0, "In Progress": 0, Open: 0, "On Hold": 0 } as Record<string, number>;
     const effort = { Low: 0, Medium: 0, High: 0 } as Record<string, number>;
     const issuePriority = { P1: 0, P2: 0, P3: 0 } as Record<string, number>;
     const release = { "Web App": 0, "Android App": 0 } as Record<string, number>;
-
-    allTasks.forEach((t, i) => {
-      // Map existing statuses to the requested 4 buckets
-      const bucket =
-        t.status === "Completed"
-          ? "Closed"
-          : t.status === "In Progress"
-          ? "In Progress"
-          : t.status === "Blocked" || t.status === "Delayed"
-          ? "On Hold"
-          : "Open";
-      taskStatus[bucket]++;
-
-      // Deterministic effort/priority/release distribution
-      effort[(["Low", "Medium", "High"] as const)[i % 3]]++;
-      issuePriority[(["P1", "P2", "P3"] as const)[(i + 1) % 3]]++;
-      release[i % 2 === 0 ? "Web App" : "Android App"]++;
+    allTasks.forEach((t) => {
+      const a = taskAttrs.get(t.id);
+      if (!a) return;
+      taskStatus[a.taskStatus]++;
+      effort[a.effort]++;
+      issuePriority[a.issuePriority]++;
+      release[a.release]++;
     });
     return { taskStatus, effort, issuePriority, release, total: allTasks.length };
-  }, []);
+  }, [scoped, taskAttrs]);
 
   // Milestones + blockers for the bottom row
   const milestones = useMemo(
