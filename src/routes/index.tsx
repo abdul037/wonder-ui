@@ -93,18 +93,18 @@ function KpiCard({
 }) {
   return (
     <div
-      className={`bg-surface-card rounded-2xl p-5 border border-border-subtle shadow-sm flex flex-col justify-between min-h-[150px] transition-all hover:shadow-md hover:-translate-y-0.5 ${
+      className={`bg-surface-card rounded-xl p-4 border border-border-subtle shadow-sm flex flex-col justify-between min-h-[120px] transition-all hover:shadow-md hover:-translate-y-0.5 ${
         critical ? "border-l-4 border-l-status-critical" : ""
       }`}
     >
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-on-surface-variant leading-tight">{label}</p>
-      <div className="flex items-end justify-between gap-3 mt-2">
-        <p className={`text-5xl font-black tracking-tight ${valueClass ?? (color ? `text-${color}` : "text-on-surface")}`}>
+      <p className="text-[9px] font-bold uppercase tracking-[0.12em] text-on-surface-variant leading-tight">{label}</p>
+      <div className="flex items-end justify-between gap-2 mt-1">
+        <p className={`text-3xl font-black tracking-tight ${valueClass ?? (color ? `text-${color}` : "text-on-surface")}`}>
           {value}
         </p>
-        {caption && <p className="text-[11px] text-on-surface-variant pb-1 text-right">{caption}</p>}
+        {caption && <p className="text-[10px] text-on-surface-variant pb-1 text-right">{caption}</p>}
       </div>
-      <div className="mt-3">
+      <div className="mt-2">
         <Sparkline kind={sparkline.kind} color={sparkline.color} />
       </div>
     </div>
@@ -112,6 +112,51 @@ function KpiCard({
 }
 
 // ───────── Project card matching reference ─────────
+function CategoryCard({
+  title,
+  icon,
+  items,
+}: {
+  title: string;
+  icon: string;
+  items: { label: string; value: number; color: string }[];
+}) {
+  const total = items.reduce((s, i) => s + i.value, 0) || 1;
+  return (
+    <div className="bg-surface-card rounded-xl border border-border-subtle shadow-sm p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-[16px] text-on-surface-variant">{icon}</span>
+          <h3 className="text-xs font-bold uppercase tracking-wide text-on-surface">{title}</h3>
+        </div>
+        <span className="text-[10px] font-mono text-on-surface-variant">{total}</span>
+      </div>
+      <div className="space-y-2">
+        {items.map((it) => {
+          const pct = Math.round((it.value / total) * 100);
+          return (
+            <div key={it.label}>
+              <div className="flex items-center justify-between text-[11px] mb-1">
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-1.5 h-1.5 rounded-full bg-${it.color}`} />
+                  <span className="text-on-surface font-medium">{it.label}</span>
+                </div>
+                <span className="font-mono text-on-surface-variant">
+                  {it.value}
+                  <span className="text-[9px] ml-1">({pct}%)</span>
+                </span>
+              </div>
+              <div className="h-1 rounded-full bg-surface-container overflow-hidden">
+                <div className={`h-full bg-${it.color}`} style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ProjectCard({ project }: { project: Project }) {
   const ws = project.workstream.toLowerCase();
   const pri = priorityChip[project.priority];
@@ -246,6 +291,34 @@ function Dashboard() {
     return { totalProjects, totalActions, inSprint, blocked, highPriority };
   }, []);
 
+  // Categorical breakdowns (deterministic from existing data)
+  const categories = useMemo(() => {
+    const allTasks = projects.flatMap((p) => p.tasks);
+    const taskStatus = { Closed: 0, "In Progress": 0, Open: 0, "On Hold": 0 } as Record<string, number>;
+    const effort = { Low: 0, Medium: 0, High: 0 } as Record<string, number>;
+    const issuePriority = { P1: 0, P2: 0, P3: 0 } as Record<string, number>;
+    const release = { "Web App": 0, "Android App": 0 } as Record<string, number>;
+
+    allTasks.forEach((t, i) => {
+      // Map existing statuses to the requested 4 buckets
+      const bucket =
+        t.status === "Completed"
+          ? "Closed"
+          : t.status === "In Progress"
+          ? "In Progress"
+          : t.status === "Blocked" || t.status === "Delayed"
+          ? "On Hold"
+          : "Open";
+      taskStatus[bucket]++;
+
+      // Deterministic effort/priority/release distribution
+      effort[(["Low", "Medium", "High"] as const)[i % 3]]++;
+      issuePriority[(["P1", "P2", "P3"] as const)[(i + 1) % 3]]++;
+      release[i % 2 === 0 ? "Web App" : "Android App"]++;
+    });
+    return { taskStatus, effort, issuePriority, release, total: allTasks.length };
+  }, []);
+
   // Milestones + blockers for the bottom row
   const milestones = useMemo(
     () =>
@@ -265,8 +338,8 @@ function Dashboard() {
         {/* Header */}
         <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:flex sm:flex-wrap sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-2xl sm:text-[28px] font-bold text-on-surface tracking-tight">Executive Overview</h1>
-            <p className="text-on-surface-variant text-sm mt-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-on-surface tracking-tight">Executive Overview</h1>
+            <p className="text-on-surface-variant text-xs mt-1">
               Real-time performance metrics across strategic workstreams.
             </p>
           </div>
@@ -275,7 +348,7 @@ function Dashboard() {
               <button
                 key={r}
                 onClick={() => setRange(r)}
-                className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-4 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                   range === r
                     ? "bg-surface-card shadow-sm text-on-surface"
                     : "text-on-surface-variant hover:text-on-surface"
@@ -333,13 +406,13 @@ function Dashboard() {
         {/* Portfolio Distribution */}
         <section>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-on-surface">Portfolio Distribution</h2>
-            <button className="flex items-center gap-1 text-sm text-primary font-medium hover:underline">
-              <span className="material-symbols-outlined text-[18px]">tune</span>
+            <h2 className="text-base font-bold text-on-surface">Portfolio Distribution</h2>
+            <button className="flex items-center gap-1 text-xs text-primary font-medium hover:underline">
+              <span className="material-symbols-outlined text-[16px]">tune</span>
               Advanced Filters
             </button>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2">
             {ALL_WS.map((ws) => {
               const active = activeWs === ws;
               const label = ws === "ALL" ? "All Workstreams" : `${workstreamFullName[ws]} (${ws})`;
@@ -349,7 +422,7 @@ function Dashboard() {
                 <button
                   key={ws}
                   onClick={() => setActiveWs(ws)}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium transition-all ${
                     active
                       ? `bg-${color} text-white shadow-md`
                       : "bg-surface-card border border-border-subtle text-on-surface hover:border-primary"
@@ -358,7 +431,7 @@ function Dashboard() {
                   {ws !== "ALL" && <span className={`w-2 h-2 rounded-full ${active ? "bg-white" : `bg-${color}`}`} />}
                   <span>{label}</span>
                   <span
-                    className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                       active ? "bg-white/20 text-white" : "bg-surface-container text-on-surface-variant"
                     }`}
                   >
@@ -367,6 +440,52 @@ function Dashboard() {
                 </button>
               );
             })}
+          </div>
+        </section>
+
+        {/* Action Categories Breakdown */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold text-on-surface">Action Categories</h2>
+            <span className="text-[11px] text-on-surface-variant">Across {categories.total} actions</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <CategoryCard
+              title="Task Status"
+              icon="task_alt"
+              items={[
+                { label: "Closed", value: categories.taskStatus.Closed, color: "status-low" },
+                { label: "In Progress", value: categories.taskStatus["In Progress"], color: "primary" },
+                { label: "Open", value: categories.taskStatus.Open, color: "status-medium" },
+                { label: "On Hold", value: categories.taskStatus["On Hold"], color: "status-critical" },
+              ]}
+            />
+            <CategoryCard
+              title="Effort"
+              icon="bolt"
+              items={[
+                { label: "Low", value: categories.effort.Low, color: "status-low" },
+                { label: "Medium", value: categories.effort.Medium, color: "status-medium" },
+                { label: "High", value: categories.effort.High, color: "status-critical" },
+              ]}
+            />
+            <CategoryCard
+              title="Issue Priority"
+              icon="priority_high"
+              items={[
+                { label: "P1", value: categories.issuePriority.P1, color: "status-critical" },
+                { label: "P2", value: categories.issuePriority.P2, color: "status-high" },
+                { label: "P3", value: categories.issuePriority.P3, color: "status-medium" },
+              ]}
+            />
+            <CategoryCard
+              title="Product Release Mode"
+              icon="rocket_launch"
+              items={[
+                { label: "Web App", value: categories.release["Web App"], color: "primary" },
+                { label: "Android App", value: categories.release["Android App"], color: "workstream-au" },
+              ]}
+            />
           </div>
         </section>
 
