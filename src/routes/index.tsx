@@ -384,29 +384,28 @@ function Dashboard() {
           </div>
 
           <div className="bg-surface-card border border-border-subtle rounded-xl p-6 shadow-sm flex flex-col">
-            <h3 className="text-lg font-bold text-on-surface mb-1">Action Priority Mix</h3>
-            <p className="text-xs text-on-surface-variant mb-4">Across {metrics.total} projects in scope</p>
-            <div className="space-y-3 flex-1">
-              {metrics.priorityCounts.map(({ p, count }) => {
+            <h3 className="text-lg font-bold text-on-surface mb-1">Action Status Mix</h3>
+            <p className="text-xs text-on-surface-variant mb-4">{metrics.totalActions} actions across {metrics.total} projects</p>
+            <div className="space-y-2 flex-1">
+              {statusOrder.map((s) => {
+                const count = metrics.taskStatusCounts[s];
                 const color =
-                  p === "Critical" || p === "High"
-                    ? "status-critical"
-                    : p === "Medium"
-                    ? "status-medium"
-                    : "status-low";
-                const pct = metrics.total ? (count / metrics.total) * 100 : 0;
+                  s === "Completed"
+                    ? "status-low"
+                    : s === "On Track"
+                    ? "workstream-au"
+                    : s === "In Progress"
+                    ? "primary"
+                    : s === "Delayed"
+                    ? "status-high"
+                    : "status-critical";
                 return (
-                  <div key={p}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full bg-${color}`} />
-                        <span className="font-medium text-on-surface">{p}</span>
-                      </span>
-                      <span className="font-bold text-on-surface">{count}</span>
-                    </div>
-                    <div className="h-1.5 bg-surface-container rounded-full overflow-hidden">
-                      <div className={`h-full bg-${color}`} style={{ width: `${pct}%` }} />
-                    </div>
+                  <div key={s} className="flex items-center justify-between px-3 py-2 rounded-lg bg-surface-container border border-border-subtle">
+                    <span className="flex items-center gap-2 text-xs">
+                      <span className={`w-2 h-2 rounded-full bg-${color}`} />
+                      <span className="font-medium text-on-surface">{s}</span>
+                    </span>
+                    <span className="text-xs font-bold text-on-surface">{count}</span>
                   </div>
                 );
               })}
