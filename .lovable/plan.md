@@ -1,84 +1,76 @@
+# Complete Supply Chain Tech Hub — Phase 2 & 3
 
-## Phase 1 — Rebrand + expanded Projects & Tasks
+Phase 1 (rebrand + expanded Portfolio with List/Grid + Task IDs/Owners) is already shipped. This plan finishes the remaining two phases requested earlier: **Newsletter** and **Admin**, plus light polish to wire them into the shell.
 
-Scope is intentionally limited. Newsletter page, Admin page, and persistence come in later phases.
+---
 
-## 1. Rebrand: "PMO Command Center" → **Supply Chain Tech Hub**
+## Phase 2 — Newsletter (`/newsletter`)
 
-- Sidebar header (`AppShell.tsx`): logo block reads `Supply Chain Tech Hub` with tagline *Projects · Tasks · Enhancements*.
-- Top bar wordmark + browser titles.
-- Per-route `head()` metas in `__root.tsx`, `index.tsx`, `portfolio.tsx`, `portfolio.$projectId.tsx`, `sprint-board.tsx`, `roadmap.tsx`, `import.tsx`, `settings.tsx`, `support.tsx` — title pattern `<Page> | Supply Chain Tech Hub`, matching `og:title` / `og:description`.
-- Dashboard hero copy + greeting line updated to SCM framing.
+A live "SCM Tech Pulse" page where enhancements, releases, and product updates are broadcast.
 
-No URL/route changes.
+**Layout (single column, magazine-style):**
+- Hero band: issue number, publish date, "Subscribe" CTA (visual only).
+- KPI bento (4 cards): Live Enhancements, Shipped This Week, Active Sprints, Roadblockers Cleared — sourced from existing `projects.ts`.
+- Featured Update: large card with hero gradient, workstream tag, summary, "Read more".
+- Updates Feed: vertical timeline grouped by date, each entry shows workstream rail, title, body, linked project/task chips, author + timestamp.
+- Workstream Digest: 4-column grid (OX / EX / AU / DW) with bullet highlights per stream.
+- Footer CTA: "Submit an update" → links to `/admin`.
 
-## 2. Expanded Projects + Tasks data model
+**Data:** new `src/data/newsletter.ts` with `NewsletterIssue` and `UpdateEntry` types, seeded from existing project `latestUpdate` + `enhancementLog` so content stays consistent.
 
-Edit `src/data/projects.ts`:
+---
 
-```ts
-type Task = {
-  id: string;          // T-1042
-  name: string;
-  type: "Enhancement" | "Bug" | "Discovery" | "Integration" | "Strategic";
-  inSprint: boolean;
-  sprint?: string;     // "Sprint 24"
-  status: Status;
-  currentlyWith: { name: string; initials: string };
-  techOwner:    { name: string; initials: string };
-  businessOwner:{ name: string; initials: string };
-  latestUpdate: { text: string; at: string }; // ISO timestamp
-};
+## Phase 3 — Admin (`/admin`)
 
-type Project = {
-  ...existing,
-  techOwner: { name: string; initials: string };
-  businessOwner: { name: string; initials: string };
-  currentlyWith: { name: string; initials: string };
-  enhancementLog: { date: string; entry: string }[];
-  latestUpdate: { text: string; at: string };
-  tasks: Task[];
-};
-```
+Single internal workspace to manage all content surfaces. Presentational only (local state via `useState`, no backend) so it's a faithful UI prototype matching the rest of the app.
 
-Re-seed the 6 existing projects with realistic SCM tasks (e.g. for Fero Auto-Plan: "API Integration Layer", "Telemetry Schema v2", "OAuth Handshake"). Keep existing IDs so detail route still resolves.
+**Structure:** left sub-nav inside the page with 4 tabs:
 
-## 3. Projects page (`/portfolio`) overhaul
+1. **Projects** — table of all projects with inline-editable status / priority / owners, "New Project" dialog, delete confirm.
+2. **Tasks** — task table filtered by project, edit Task ID, type, sprint, currentlyWith, status; add/remove tasks.
+3. **Enhancement Log** — chronological list of log entries per project with an "Add Log Entry" form (workstream, title, body, author).
+4. **Newsletter / Product Updates** — composer (title, summary, body textarea, workstream multi-select, feature toggle, publish date) + list of existing entries with edit/delete.
 
-Rename page header to **Projects & Tasks**. Add:
+Each tab uses shadcn `Tabs`, `Table`, `Dialog`, `Input`, `Textarea`, `Select`, `Switch`, `Badge`. Toasts via `sonner` for save/delete feedback.
 
-- **View toggle** top-right: `view_list` ↔ `grid_view` (local `useState`, default `list`).
-- **Filter bar**: workstream multi-select chips, status dropdown, sprint dropdown, free-text search across project/task name + owner.
-- **Scope toggle**: `Projects` ↔ `Tasks` — switches between project-level rows and task-level rows (tasks flattened with their parent project name).
+**Auth note:** No real auth in this phase — page is reachable directly. We'll mark it "Internal" in the header. Real auth + persistence can come in a later phase if requested.
 
-### List view columns (table)
-Project · Task · Task ID · Type · In Sprint · Status · Currently With · Tech Owner · Business Owner · Enhancement Log (icon → opens project detail's log section) · Latest Update *(text + relative timestamp)* · Workstream chip.
+---
 
-Sticky header, hover row, click row → `/portfolio/$projectId`.
+## Shell + Polish
 
-### Grid view (cards)
-Card per project (or per task in Tasks scope) showing:
-- Workstream color rail (left border, matching Design1 sprint cards).
-- Project / task name + Task ID chip.
-- Status pill + In-Sprint pill.
-- Three avatar rows: Currently With · Tech · Business.
-- Latest update preview line with `schedule` icon + relative time.
-- Footer: enhancement count + "View details →".
+- `AppShell.tsx`: add **Newsletter** (icon `campaign`) and **Admin** (icon `admin_panel_settings`) to sidebar; group "Workspace" vs "Manage".
+- `__root.tsx` / new route `head()`s: per-page titles + OG description.
+- Dashboard (`/`): add a compact "Latest from the Newsletter" strip linking to `/newsletter`.
+- Styles: reuse existing tokens — no new colors. Add `.timeline-rail` + `.kpi-bento` utilities to `src/styles.css`.
 
-Responsive: 1 / 2 / 3 columns at sm / md / xl.
-
-## 4. Small UI polish (carried from attached designs, no scope creep)
-
-- Use `card-hover-effect` (subtle shadow + 1px translate) from Design1 on project cards and table rows.
-- Workstream rail color uses the existing `workstream-*` tokens.
+---
 
 ## Files
 
-- **Edit**: `src/data/projects.ts`, `src/components/AppShell.tsx`, `src/routes/__root.tsx`, `src/routes/index.tsx`, `src/routes/portfolio.tsx`, `src/routes/portfolio.$projectId.tsx`, `src/routes/sprint-board.tsx`, `src/routes/roadmap.tsx`, `src/routes/import.tsx`, `src/routes/settings.tsx`, `src/routes/support.tsx`, `src/styles.css` (add `card-hover-effect` utility + safelist any new dynamic classes).
-- **Add**: `src/components/projects/ProjectsTable.tsx`, `src/components/projects/ProjectsGrid.tsx`, `src/components/projects/ProjectsFilters.tsx`, helper `src/lib/time.ts` for relative timestamps.
+**New**
+- `src/routes/newsletter.tsx`
+- `src/routes/admin.tsx`
+- `src/data/newsletter.ts`
+- `src/components/newsletter/UpdateCard.tsx`
+- `src/components/newsletter/WorkstreamDigest.tsx`
+- `src/components/admin/ProjectsAdmin.tsx`
+- `src/components/admin/TasksAdmin.tsx`
+- `src/components/admin/LogsAdmin.tsx`
+- `src/components/admin/NewsletterAdmin.tsx`
 
-## Out of scope (future phases)
+**Edited**
+- `src/components/AppShell.tsx` — sidebar entries + grouping
+- `src/routes/index.tsx` — newsletter strip
+- `src/styles.css` — small utility additions
 
-- Phase 2: `/newsletter` page from Design4 (workstream impact cards, KPI bento, live updates feed).
-- Phase 3: `/admin` page (CRUD over projects, tasks, newsletter posts, product updates).
-- Phase 4: Lovable Cloud persistence to replace in-memory data.
+---
+
+## Out of scope (call out for later phases)
+
+- Real persistence (Supabase tables for projects/tasks/logs/newsletter).
+- Auth + role-gating for `/admin`.
+- Email delivery of the newsletter.
+- File uploads / rich-text editor.
+
+Confirm and I'll build it.
