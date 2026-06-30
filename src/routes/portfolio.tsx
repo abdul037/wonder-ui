@@ -325,13 +325,30 @@ function PortfolioIndex() {
   );
 }
 
-function ProjectsTable({ rows, isAdmin, onEdit }: { rows: Project[]; isAdmin: boolean; onEdit: (p: Project) => void }) {
+interface ProjectListProps {
+  rows: Project[];
+  isAdmin: boolean;
+  onEdit: (p: Project) => void;
+  expanded: Set<string>;
+  onToggle: (id: string) => void;
+  onEditTask: (project: Project, task: Task) => void;
+  onAddTask: (project: Project) => void;
+}
+
+interface TaskListProps {
+  rows: TaskRow[];
+  isAdmin: boolean;
+  onEditTask: (project: Project, task: Task) => void;
+}
+
+function ProjectsTable({ rows, isAdmin, onEdit, expanded, onToggle, onEditTask, onAddTask }: ProjectListProps) {
   return (
     <div className="bg-surface-card rounded-xl border border-border-subtle overflow-hidden shadow-sm">
       <div className="overflow-x-auto custom-scrollbar">
-        <table className="w-full text-left text-sm min-w-[1400px]">
+        <table className="w-full text-left text-sm min-w-[1440px]">
           <thead>
             <tr className="bg-surface-container-low border-b border-border-subtle text-on-surface-variant text-xs">
+              <th className="px-2 py-3 w-8" />
               {[
                 "Project", "Lead Task", "Task ID", "Type", "Sprint", "Status",
                 "Currently With", "Tech Owner", "Business Owner", "Log", "Latest Update", "Workstream",
@@ -344,12 +361,28 @@ function ProjectsTable({ rows, isAdmin, onEdit }: { rows: Project[]; isAdmin: bo
           <tbody className="divide-y divide-border-subtle">
             {rows.map((p) => {
               const lead = p.tasks[0];
+              const isOpen = expanded.has(p.id);
               return (
+                <>
                 <tr key={p.id} className="hover:bg-surface-container-lowest transition-colors group card-hover-effect">
+                  <td className="px-2 py-4 align-top">
+                    <button
+                      onClick={() => onToggle(p.id)}
+                      title={isOpen ? "Hide tasks" : "Show tasks"}
+                      className="text-on-surface-variant hover:text-primary hover:bg-primary/10 rounded p-1"
+                    >
+                      <span className={`material-symbols-outlined !text-[18px] transition-transform ${isOpen ? "rotate-90" : ""}`}>
+                        chevron_right
+                      </span>
+                    </button>
+                  </td>
                   <td className="px-4 py-4">
                     <Link to="/portfolio/$projectId" params={{ projectId: p.id }} className="font-bold text-on-surface group-hover:text-primary">
                       {p.name}
                     </Link>
+                    <p className="text-[10px] text-on-surface-variant mt-0.5">
+                      {p.tasks.length} task{p.tasks.length === 1 ? "" : "s"}
+                    </p>
                   </td>
                   <td className="px-4 py-4">{lead?.name ?? "—"}</td>
                   <td className="px-4 py-4 font-mono text-xs text-on-surface-variant">{lead?.id ?? p.eid}</td>
@@ -382,6 +415,20 @@ function ProjectsTable({ rows, isAdmin, onEdit }: { rows: Project[]; isAdmin: bo
                     </td>
                   )}
                 </tr>
+                {isOpen && (
+                  <tr key={`${p.id}-drill`} className="bg-surface-container-lowest">
+                    <td />
+                    <td colSpan={isAdmin ? 13 : 12} className="px-4 py-3">
+                      <TaskDrilldown
+                        project={p}
+                        isAdmin={isAdmin}
+                        onEditTask={onEditTask}
+                        onAddTask={onAddTask}
+                      />
+                    </td>
+                  </tr>
+                )}
+                </>
               );
             })}
           </tbody>
@@ -394,7 +441,7 @@ function ProjectsTable({ rows, isAdmin, onEdit }: { rows: Project[]; isAdmin: bo
   );
 }
 
-function TasksTable({ rows }: { rows: TaskRow[] }) {
+function TasksTable({ rows, isAdmin, onEditTask }: TaskListProps) {
   return (
     <div className="bg-surface-card rounded-xl border border-border-subtle overflow-hidden shadow-sm">
       <div className="overflow-x-auto custom-scrollbar">
@@ -407,6 +454,7 @@ function TasksTable({ rows }: { rows: TaskRow[] }) {
               ].map((h) => (
                 <th key={h} className="px-4 py-3 font-medium whitespace-nowrap">{h}</th>
               ))}
+              {isAdmin && <th className="px-3 py-3" />}
             </tr>
           </thead>
           <tbody className="divide-y divide-border-subtle">
@@ -430,6 +478,17 @@ function TasksTable({ rows }: { rows: TaskRow[] }) {
                   <p className="text-[10px] font-mono text-on-surface-variant mt-0.5">{relativeTime(task.latestUpdate.at)}</p>
                 </td>
                 <td className="px-4 py-4"><WorkstreamChip ws={project.workstream} /></td>
+                {isAdmin && (
+                  <td className="px-3 py-4">
+                    <button
+                      onClick={() => onEditTask(project, task)}
+                      title="Edit task"
+                      className="text-primary hover:bg-primary/10 rounded p-1"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">edit</span>
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -442,11 +501,12 @@ function TasksTable({ rows }: { rows: TaskRow[] }) {
   );
 }
 
-function ProjectsGrid({ rows, isAdmin, onEdit }: { rows: Project[]; isAdmin: boolean; onEdit: (p: Project) => void }) {
+function ProjectsGrid({ rows, isAdmin, onEdit, expanded, onToggle, onEditTask, onAddTask }: ProjectListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-fr">
       {rows.map((p) => {
         const lead = p.tasks[0];
+        const isOpen = expanded.has(p.id);
         return (
           <div
             key={p.id}
@@ -497,17 +557,41 @@ function ProjectsGrid({ rows, isAdmin, onEdit }: { rows: Project[]; isAdmin: boo
                 <p className="text-xs text-on-surface line-clamp-2">{p.latestUpdate.text}</p>
               </div>
             </div>
-            <div className="px-5 py-3 bg-surface-container-lowest border-t border-border-subtle flex items-center justify-between text-xs">
-              <span className="text-on-surface-variant inline-flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px]">history_edu</span>
-                {p.enhancementLog.length} log entries
-              </span>
-              <span className="text-primary font-medium inline-flex items-center gap-1">
-                View details
-                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-              </span>
-            </div>
             </Link>
+            <div className="px-5 py-2.5 bg-surface-container-lowest border-t border-border-subtle flex items-center justify-between text-xs">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggle(p.id);
+                }}
+                className="text-on-surface-variant inline-flex items-center gap-1 hover:text-primary"
+              >
+                <span className={`material-symbols-outlined text-[14px] transition-transform ${isOpen ? "rotate-90" : ""}`}>
+                  chevron_right
+                </span>
+                {p.tasks.length} task{p.tasks.length === 1 ? "" : "s"}
+              </button>
+              <Link
+                to="/portfolio/$projectId"
+                params={{ projectId: p.id }}
+                className="text-primary font-medium inline-flex items-center gap-1"
+              >
+                Open
+                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+              </Link>
+            </div>
+            {isOpen && (
+              <div className="px-4 pb-4 pt-1 bg-surface-container-lowest border-t border-border-subtle">
+                <TaskDrilldown
+                  project={p}
+                  isAdmin={isAdmin}
+                  onEditTask={onEditTask}
+                  onAddTask={onAddTask}
+                  compact
+                />
+              </div>
+            )}
           </div>
         );
       })}
@@ -515,16 +599,28 @@ function ProjectsGrid({ rows, isAdmin, onEdit }: { rows: Project[]; isAdmin: boo
   );
 }
 
-function TasksGrid({ rows }: { rows: TaskRow[] }) {
+function TasksGrid({ rows, isAdmin, onEditTask }: TaskListProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {rows.map(({ project, task }) => (
-        <Link
+        <div
           key={task.id}
-          to="/portfolio/$projectId"
-          params={{ projectId: project.id }}
-          className={`group bg-surface-card border border-border-subtle rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border-l-4 border-l-workstream-${project.workstream.toLowerCase()} card-hover-effect`}
+          className={`group relative bg-surface-card border border-border-subtle rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border-l-4 border-l-workstream-${project.workstream.toLowerCase()} card-hover-effect`}
         >
+          {isAdmin && (
+            <button
+              onClick={() => onEditTask(project, task)}
+              title="Edit task"
+              className="absolute top-3 right-3 z-10 text-primary bg-surface-card border border-border-subtle rounded-md p-1 shadow-sm hover:bg-primary/10"
+            >
+              <span className="material-symbols-outlined text-[16px]">edit</span>
+            </button>
+          )}
+          <Link
+            to="/portfolio/$projectId"
+            params={{ projectId: project.id }}
+            className="block"
+          >
           <div className="p-5 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div>
