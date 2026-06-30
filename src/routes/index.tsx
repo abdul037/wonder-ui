@@ -116,16 +116,17 @@ function CategoryCard({
   title,
   icon,
   items,
-  activeKey,
+  activeKeys,
   onToggle,
 }: {
   title: string;
   icon: string;
   items: { label: string; value: number; color: string }[];
-  activeKey?: string | null;
+  activeKeys?: string[];
   onToggle?: (label: string) => void;
 }) {
   const total = items.reduce((s, i) => s + i.value, 0) || 1;
+  const hasActive = (activeKeys?.length ?? 0) > 0;
   return (
     <div className="bg-surface-card rounded-xl border border-border-subtle shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
@@ -133,9 +134,9 @@ function CategoryCard({
           <span className="material-symbols-outlined text-[16px] text-on-surface-variant">{icon}</span>
           <h3 className="text-xs font-bold uppercase tracking-wide text-on-surface">{title}</h3>
         </div>
-        {activeKey ? (
+        {hasActive ? (
           <button
-            onClick={() => onToggle?.(activeKey)}
+            onClick={() => activeKeys!.forEach((k) => onToggle?.(k))}
             className="text-[10px] font-bold text-primary hover:underline"
           >
             Clear
@@ -147,8 +148,8 @@ function CategoryCard({
       <div className="space-y-2">
         {items.map((it) => {
           const pct = Math.round((it.value / total) * 100);
-          const isActive = activeKey === it.label;
-          const dimmed = activeKey && !isActive;
+          const isActive = activeKeys?.includes(it.label) ?? false;
+          const dimmed = hasActive && !isActive;
           return (
             <button
               key={it.label}
@@ -162,7 +163,15 @@ function CategoryCard({
             >
               <div className="flex items-center justify-between text-[11px] mb-1">
                 <div className="flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full bg-${it.color}`} />
+                  <span
+                    className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors ${
+                      isActive ? `bg-${it.color} border-${it.color}` : "border-border-subtle"
+                    }`}
+                  >
+                    {isActive && (
+                      <span className="material-symbols-outlined text-[10px] text-white leading-none">check</span>
+                    )}
+                  </span>
                   <span className={`font-medium ${isActive ? `text-${it.color}` : "text-on-surface"}`}>{it.label}</span>
                 </div>
                 <span className="font-mono text-on-surface-variant">
