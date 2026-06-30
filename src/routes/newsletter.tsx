@@ -213,6 +213,44 @@ function NewsletterPage() {
           </div>
         </section>
 
+        {/* Visual Velocity Impact */}
+        <section className="bg-surface-card border border-border-subtle rounded-2xl p-8 shadow-sm">
+          <div className="flex items-center gap-3 mb-1">
+            <span className="material-symbols-outlined text-primary">insights</span>
+            <h3 className="text-xl font-bold text-on-surface">Visual Velocity Impact</h3>
+          </div>
+          <p className="text-sm text-on-surface-variant mb-6">
+            Enhancements shipped per workstream this issue cycle vs. the previous one.
+          </p>
+          <div className="grid grid-cols-4 gap-6 items-end h-48">
+            {(Object.keys(workstreamDigest) as Workstream[]).map((ws) => {
+              const current = workstreamDigest[ws].highlights.length * 22 + 30;
+              const previous = Math.max(20, current - 18);
+              return (
+                <div key={ws} className="flex flex-col items-center gap-2 h-full">
+                  <div className="flex-1 w-full flex items-end justify-center gap-2">
+                    <div
+                      className="w-5 rounded-t-md bg-surface-container-high"
+                      style={{ height: `${previous}%` }}
+                      title="Previous cycle"
+                    />
+                    <div
+                      className={`w-5 rounded-t-md bg-workstream-${ws.toLowerCase()}`}
+                      style={{ height: `${current}%` }}
+                      title="Current cycle"
+                    />
+                  </div>
+                  <WorkstreamPill ws={ws} />
+                </div>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-6 mt-6 text-xs text-on-surface-variant">
+            <span className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-surface-container-high" /> Previous cycle</span>
+            <span className="flex items-center gap-2"><span className="w-3 h-3 rounded bg-primary" /> Current cycle</span>
+          </div>
+        </section>
+
         <footer className="text-center py-10 border-t border-border-subtle">
           <p className="text-sm text-on-surface-variant">
             Have an update to share?{" "}

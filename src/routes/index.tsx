@@ -393,6 +393,13 @@ function Dashboard() {
           </div>
         </section>
       </div>
+      <Link
+        to="/import"
+        className="fixed bottom-8 right-8 z-30 bg-primary text-white w-14 h-14 rounded-full shadow-xl shadow-primary/30 flex items-center justify-center hover:scale-105 transition-transform"
+        aria-label="Quick import"
+      >
+        <span className="material-symbols-outlined">add</span>
+      </Link>
     </AppShell>
   );
 }
