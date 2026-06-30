@@ -133,7 +133,7 @@ export const workstreamDigest: Record<Workstream, { title: string; highlights: s
     ],
   },
   DW: {
-    title: "Data Warehouse",
+    title: "Data Warehouse / PowerBI",
     highlights: [
       "Data Stream 2.0 canary consumers live in staging",
       "Bulk WeighScale UAT round 3 at 92% pass",
