@@ -7,6 +7,7 @@ const navItems = [
   { to: "/pipeline", icon: "pending_actions", label: "Pipeline" },
   { to: "/sprint-board", icon: "view_kanban", label: "Sprint Board" },
   { to: "/roadmap", icon: "map", label: "Roadmap" },
+  { to: "/unified-roadmap", icon: "timeline", label: "Unified Roadmap" },
   { to: "/newsletter", icon: "campaign", label: "Newsletter" },
   { to: "/import", icon: "upload_file", label: "Import Data" },
 ] as const;

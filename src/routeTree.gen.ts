@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UnifiedRoadmapRouteImport } from './routes/unified-roadmap'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as SprintBoardRouteImport } from './routes/sprint-board'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -21,6 +22,11 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PortfolioProjectIdRouteImport } from './routes/portfolio.$projectId'
 
+const UnifiedRoadmapRoute = UnifiedRoadmapRouteImport.update({
+  id: '/unified-roadmap',
+  path: '/unified-roadmap',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SupportRoute = SupportRouteImport.update({
   id: '/support',
   path: '/support',
@@ -88,6 +94,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/sprint-board': typeof SprintBoardRoute
   '/support': typeof SupportRoute
+  '/unified-roadmap': typeof UnifiedRoadmapRoute
   '/portfolio/$projectId': typeof PortfolioProjectIdRoute
 }
 export interface FileRoutesByTo {
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/sprint-board': typeof SprintBoardRoute
   '/support': typeof SupportRoute
+  '/unified-roadmap': typeof UnifiedRoadmapRoute
   '/portfolio/$projectId': typeof PortfolioProjectIdRoute
 }
 export interface FileRoutesById {
@@ -115,6 +123,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/sprint-board': typeof SprintBoardRoute
   '/support': typeof SupportRoute
+  '/unified-roadmap': typeof UnifiedRoadmapRoute
   '/portfolio/$projectId': typeof PortfolioProjectIdRoute
 }
 export interface FileRouteTypes {
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sprint-board'
     | '/support'
+    | '/unified-roadmap'
     | '/portfolio/$projectId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -143,6 +153,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sprint-board'
     | '/support'
+    | '/unified-roadmap'
     | '/portfolio/$projectId'
   id:
     | '__root__'
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/sprint-board'
     | '/support'
+    | '/unified-roadmap'
     | '/portfolio/$projectId'
   fileRoutesById: FileRoutesById
 }
@@ -170,10 +182,18 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SprintBoardRoute: typeof SprintBoardRoute
   SupportRoute: typeof SupportRoute
+  UnifiedRoadmapRoute: typeof UnifiedRoadmapRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/unified-roadmap': {
+      id: '/unified-roadmap'
+      path: '/unified-roadmap'
+      fullPath: '/unified-roadmap'
+      preLoaderRoute: typeof UnifiedRoadmapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/support': {
       id: '/support'
       path: '/support'
@@ -277,6 +297,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SprintBoardRoute: SprintBoardRoute,
   SupportRoute: SupportRoute,
+  UnifiedRoadmapRoute: UnifiedRoadmapRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
