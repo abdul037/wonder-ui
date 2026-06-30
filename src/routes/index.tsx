@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { projects, workstreamLabel, workstreamFullName, type Workstream, type Status, type Priority } from "@/data/projects";
+import { projects, workstreamLabel, workstreamFullName, type Workstream, type Status } from "@/data/projects";
 import { updates as newsUpdates } from "@/data/newsletter";
 import { relativeTime } from "@/lib/time";
 
@@ -87,7 +87,7 @@ function KpiTile({
   );
 }
 
-function StatusBar({ counts, total }: { counts: Record<Status, number>; total: number }) {
+function StatusPills({ counts }: { counts: Record<Status, number> }) {
   const segs: { status: Status; color: string }[] = [
     { status: "Completed", color: "bg-status-low" },
     { status: "On Track", color: "bg-workstream-au" },
@@ -96,24 +96,37 @@ function StatusBar({ counts, total }: { counts: Record<Status, number>; total: n
     { status: "Blocked", color: "bg-status-critical" },
   ];
   return (
-    <div>
-      <div className="flex w-full h-3 rounded-full overflow-hidden bg-surface-container">
-        {segs.map((s) => {
-          const pct = total ? (counts[s.status] / total) * 100 : 0;
-          if (!pct) return null;
-          return <div key={s.status} className={s.color} style={{ width: `${pct}%` }} title={`${s.status}: ${counts[s.status]}`} />;
-        })}
-      </div>
-      <div className="flex flex-wrap gap-4 mt-4">
-        {segs.map((s) => (
-          <div key={s.status} className="flex items-center gap-2">
-            <span className={`w-2.5 h-2.5 rounded-full ${s.color}`} />
-            <span className="text-xs text-on-surface-variant">{s.status}</span>
-            <span className="text-xs font-bold text-on-surface">{counts[s.status]}</span>
-          </div>
-        ))}
-      </div>
+    <div className="flex flex-wrap gap-3">
+      {segs.map((s) => (
+        <div
+          key={s.status}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-container border border-border-subtle"
+        >
+          <span className={`w-2.5 h-2.5 rounded-full ${s.color}`} />
+          <span className="text-xs text-on-surface-variant">{s.status}</span>
+          <span className="text-xs font-bold text-on-surface">{counts[s.status]}</span>
+        </div>
+      ))}
     </div>
+  );
+}
+
+function StatusMini({ status, count }: { status: Status; count: number }) {
+  const color =
+    status === "Completed"
+      ? "status-low"
+      : status === "On Track"
+      ? "workstream-au"
+      : status === "In Progress"
+      ? "primary"
+      : status === "Delayed"
+      ? "status-high"
+      : "status-critical";
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold bg-${color}/10 text-${color}`}>
+      <span className={`w-1.5 h-1.5 rounded-full bg-${color}`} />
+      {count} {status}
+    </span>
   );
 }
 
@@ -142,29 +155,51 @@ function Dashboard() {
       { "On Track": 0, "In Progress": 0, Blocked: 0, Delayed: 0, Completed: 0 }
     );
 
+    const taskStatusCounts = statusOrder.reduce<Record<Status, number>>(
+      (acc, s) => {
+        acc[s] = allTasks.filter((t) => t.status === s).length;
+        return acc;
+      },
+      { "On Track": 0, "In Progress": 0, Blocked: 0, Delayed: 0, Completed: 0 }
+    );
+
     const byWorkstream = (["OX", "EX", "AU", "DW"] as Workstream[]).map((ws) => {
       const ps = projects.filter((p) => p.workstream === ws);
       const tasks = ps.flatMap((p) => p.tasks);
+      const statusCounts = statusOrder.reduce<Record<Status, number>>(
+        (acc, s) => {
+          acc[s] = ps.filter((p) => p.status === s).length;
+          return acc;
+        },
+        { "On Track": 0, "In Progress": 0, Blocked: 0, Delayed: 0, Completed: 0 }
+      );
       return {
         ws,
         projects: ps.length,
         actions: tasks.length,
+        statusCounts,
         blockers: ps.filter((p) => p.status === "Blocked").length,
       };
     });
 
-    const priorityCounts = (["Critical", "High", "Medium", "Low"] as Priority[]).map((p) => ({
-      p,
-      count: scoped.filter((x) => x.priority === p).length,
-    }));
 
     // Owner workload (currently with)
-    const ownerMap = new Map<string, { name: string; initials: string; actions: number; blocked: number }>();
+    const ownerMap = new Map<
+      string,
+      { name: string; initials: string; actions: number; blocked: number; statusCounts: Record<Status, number> }
+    >();
     for (const t of allTasks) {
       const key = t.currentlyWith.name;
-      const cur = ownerMap.get(key) ?? { name: t.currentlyWith.name, initials: t.currentlyWith.initials, actions: 0, blocked: 0 };
+      const cur = ownerMap.get(key) ?? {
+        name: t.currentlyWith.name,
+        initials: t.currentlyWith.initials,
+        actions: 0,
+        blocked: 0,
+        statusCounts: { "On Track": 0, "In Progress": 0, Blocked: 0, Delayed: 0, Completed: 0 },
+      };
       cur.actions += 1;
       if (t.status === "Blocked") cur.blocked += 1;
+      cur.statusCounts[t.status as Status] += 1;
       ownerMap.set(key, cur);
     }
     const owners = Array.from(ownerMap.values()).sort((a, b) => b.actions - a.actions).slice(0, 5);
@@ -179,8 +214,8 @@ function Dashboard() {
       inSprint,
       activeSprints,
       statusCounts,
+      taskStatusCounts,
       byWorkstream,
-      priorityCounts,
       owners,
     };
   }, [scoped, allTasks]);
@@ -306,47 +341,46 @@ function Dashboard() {
           />
         </section>
 
-        {/* Portfolio health + Priority mix */}
+        {/* Portfolio health + Workstream status breakdown */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-surface-card border border-border-subtle rounded-xl p-6 shadow-sm">
             <div className="mb-4">
               <h3 className="text-lg font-bold text-on-surface">Portfolio Health</h3>
               <p className="text-xs text-on-surface-variant">Project status distribution · {metrics.total} projects in scope</p>
             </div>
-            <StatusBar counts={metrics.statusCounts} total={metrics.total} />
+            <StatusPills counts={metrics.statusCounts} />
 
             <div className="mt-6 pt-6 border-t border-border-subtle">
               <div className="flex items-center justify-between mb-4">
                 <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
-                  Workstream Performance
+                  Workstream Status Breakdown
                 </p>
-                <p className="text-[10px] text-on-surface-variant">projects · actions · blockers</p>
+                <p className="text-[10px] text-on-surface-variant">counts per status</p>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {metrics.byWorkstream.map((w) => (
-                  <div key={w.ws} className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
+                  <div
+                    key={w.ws}
+                    className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-surface-container-lowest border border-border-subtle"
+                  >
+                    <div className="flex items-center gap-2 shrink-0 sm:w-44">
                       <span
                         className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-workstream-${w.ws.toLowerCase()}/10 text-workstream-${w.ws.toLowerCase()}`}
                       >
                         {w.ws}
                       </span>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-on-surface truncate">{workstreamFullName[w.ws]}</p>
-                        <p className="text-[10px] text-on-surface-variant">
-                          {w.projects} projects · {w.actions} actions
-                        </p>
-                      </div>
+                      <p className="text-xs font-bold text-on-surface truncate">{workstreamFullName[w.ws]}</p>
                     </div>
-                    {w.blockers > 0 ? (
-                      <span className="px-2 py-0.5 rounded-full bg-status-critical/10 text-status-critical text-[10px] font-bold whitespace-nowrap">
-                        {w.blockers} blocked
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-full bg-status-low/10 text-status-low text-[10px] font-bold whitespace-nowrap">
-                        clear
-                      </span>
-                    )}
+                    <div className="flex flex-wrap gap-2 flex-1">
+                      {statusOrder.map((s) => {
+                        const count = w.statusCounts[s];
+                        if (!count) return null;
+                        return <StatusMini key={s} status={s} count={count} />;
+                      })}
+                      {w.blockers === 0 && w.projects === 0 && (
+                        <span className="text-[10px] text-on-surface-variant">No projects in this scope</span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -354,29 +388,28 @@ function Dashboard() {
           </div>
 
           <div className="bg-surface-card border border-border-subtle rounded-xl p-6 shadow-sm flex flex-col">
-            <h3 className="text-lg font-bold text-on-surface mb-1">Action Priority Mix</h3>
-            <p className="text-xs text-on-surface-variant mb-4">Across {metrics.total} projects in scope</p>
-            <div className="space-y-3 flex-1">
-              {metrics.priorityCounts.map(({ p, count }) => {
+            <h3 className="text-lg font-bold text-on-surface mb-1">Action Status Mix</h3>
+            <p className="text-xs text-on-surface-variant mb-4">{metrics.totalActions} actions across {metrics.total} projects</p>
+            <div className="space-y-2 flex-1">
+              {statusOrder.map((s) => {
+                const count = metrics.taskStatusCounts[s];
                 const color =
-                  p === "Critical" || p === "High"
-                    ? "status-critical"
-                    : p === "Medium"
-                    ? "status-medium"
-                    : "status-low";
-                const pct = metrics.total ? (count / metrics.total) * 100 : 0;
+                  s === "Completed"
+                    ? "status-low"
+                    : s === "On Track"
+                    ? "workstream-au"
+                    : s === "In Progress"
+                    ? "primary"
+                    : s === "Delayed"
+                    ? "status-high"
+                    : "status-critical";
                 return (
-                  <div key={p}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full bg-${color}`} />
-                        <span className="font-medium text-on-surface">{p}</span>
-                      </span>
-                      <span className="font-bold text-on-surface">{count}</span>
-                    </div>
-                    <div className="h-1.5 bg-surface-container rounded-full overflow-hidden">
-                      <div className={`h-full bg-${color}`} style={{ width: `${pct}%` }} />
-                    </div>
+                  <div key={s} className="flex items-center justify-between px-3 py-2 rounded-lg bg-surface-container border border-border-subtle">
+                    <span className="flex items-center gap-2 text-xs">
+                      <span className={`w-2 h-2 rounded-full bg-${color}`} />
+                      <span className="font-medium text-on-surface">{s}</span>
+                    </span>
+                    <span className="text-xs font-bold text-on-surface">{count}</span>
                   </div>
                 );
               })}
@@ -479,30 +512,26 @@ function Dashboard() {
             </div>
             <p className="text-xs text-on-surface-variant mb-4">Top owners by open actions</p>
             <div className="space-y-3">
-              {metrics.owners.map((o) => {
-                const max = metrics.owners[0]?.actions || 1;
-                return (
-                  <div key={o.name} className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center text-[11px] font-bold shrink-0">
-                      {o.initials}
+              {metrics.owners.map((o) => (
+                <div key={o.name} className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center text-[11px] font-bold shrink-0">
+                    {o.initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-medium text-on-surface truncate">{o.name}</span>
+                      <span className="font-bold text-on-surface">{o.actions}</span>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-on-surface truncate">{o.name}</span>
-                        <span className="font-bold text-on-surface">{o.actions}</span>
-                      </div>
-                      <div className="h-1.5 bg-surface-container rounded-full overflow-hidden mt-1">
-                        <div className="h-full bg-primary" style={{ width: `${(o.actions / max) * 100}%` }} />
-                      </div>
-                      {o.blocked > 0 && (
-                        <p className="text-[10px] text-status-critical font-bold mt-1">
-                          {o.blocked} blocked
-                        </p>
-                      )}
+                    <div className="flex flex-wrap gap-1">
+                      {statusOrder.map((s) => {
+                        const count = o.statusCounts[s];
+                        if (!count) return null;
+                        return <StatusMini key={s} status={s} count={count} />;
+                      })}
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           </div>
         </section>
