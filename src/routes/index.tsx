@@ -220,10 +220,10 @@ function ProjectCard({ project }: { project: Project }) {
     Jira: "task",
   };
 
-  // Meta chip (Sprint / Days left / Workstream)
+  // Meta chip — Sprint membership, no sprint number
   const meta = project.sprint
-    ? { icon: "flag", label: project.sprint.toUpperCase() }
-    : { icon: "schedule", label: "ACTIVE" };
+    ? { icon: "flag", label: "IN SPRINT" }
+    : { icon: "inventory_2", label: "BACKLOG" };
 
   return (
     <div className="bg-surface-card rounded-2xl border border-border-subtle shadow-sm flex flex-col transition-all hover:shadow-md hover:-translate-y-0.5 min-h-[320px]">
