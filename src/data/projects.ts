@@ -20,6 +20,8 @@ export interface Person {
 export interface UpdateEntry {
   text: string;
   at: string; // ISO timestamp
+  author?: string;
+  kind?: "update" | "blocker" | "milestone" | "system";
 }
 
 export interface Task {
@@ -35,6 +37,7 @@ export interface Task {
   latestUpdate: UpdateEntry;
   priority?: Priority;
   boardColumn?: BoardColumn;
+  updates?: UpdateEntry[];
 }
 
 export interface Project {
@@ -69,6 +72,7 @@ export interface Project {
   enhancementLog: { date: string; entry: string }[];
   latestUpdate: UpdateEntry;
   tasks: Task[];
+  updates?: UpdateEntry[];
 }
 
 const avatars = [
@@ -348,10 +352,46 @@ const scmExtras: Record<string, ScmExtras> = {
   },
 };
 
-export const projects: Project[] = baseProjects.map((b) => ({
-  ...(b as unknown as Omit<Project, keyof ScmExtras>),
-  ...scmExtras[b.id],
-}));
+function seedTaskUpdates(t: Task): Task {
+  if (t.updates && t.updates.length) return t;
+  return { ...t, updates: [{ ...t.latestUpdate, kind: "update" }] };
+}
+
+function seedProjectUpdates(p: Project): Project {
+  if (p.updates && p.updates.length) return p;
+  const logEntries: UpdateEntry[] = (p.enhancementLog ?? []).map((e) => ({
+    text: e.entry,
+    at: new Date(e.date).toISOString(),
+    kind: "milestone",
+  }));
+  const merged: UpdateEntry[] = [{ ...p.latestUpdate, kind: "update" }, ...logEntries];
+  // De-dupe identical text+at
+  const seen = new Set<string>();
+  const updates = merged.filter((u) => {
+    const k = `${u.text}|${u.at}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  return { ...p, updates };
+}
+
+export const projects: Project[] = baseProjects.map((b) => {
+  const base = {
+    ...(b as unknown as Omit<Project, keyof ScmExtras>),
+    ...scmExtras[b.id],
+  } as Project;
+  base.tasks = base.tasks.map(seedTaskUpdates);
+  return seedProjectUpdates(base);
+});
+
+export function getTaskUpdates(t: Task): UpdateEntry[] {
+  return t.updates && t.updates.length ? t.updates : [t.latestUpdate];
+}
+
+export function getProjectUpdates(p: Project): UpdateEntry[] {
+  return p.updates && p.updates.length ? p.updates : [p.latestUpdate];
+}
 
 export const getProject = (id: string) => projects.find((p) => p.id === id);
 

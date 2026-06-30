@@ -4,6 +4,7 @@ import { AppShell } from "@/components/AppShell";
 import {
   projects,
   statusStyle,
+  getProjectUpdates,
   type Person,
   type Project,
   type Status,
@@ -12,11 +13,13 @@ import {
 } from "@/data/projects";
 import { relativeTime } from "@/lib/time";
 import { useIsAdmin } from "@/lib/admin";
-import { useDataVersion } from "@/lib/store";
+import { useDataVersion, appendProjectUpdate, addBlocker } from "@/lib/store";
 import { ProjectEditDialog } from "@/components/admin-edit/ProjectEditDialog";
 import { TaskEditDialog } from "@/components/admin-edit/TaskEditDialog";
 import { createTask } from "@/lib/store";
 import { toast } from "sonner";
+import { QuickUpdate } from "@/components/portfolio/QuickUpdate";
+import { UpdateTimeline } from "@/components/portfolio/UpdateTimeline";
 
 export const Route = createFileRoute("/portfolio")({
   head: () => ({
@@ -644,14 +647,58 @@ function TaskDrilldown({
   onAddTask: (project: Project) => void;
   compact?: boolean;
 }) {
+  type Tab = "tasks" | "updates" | "blockers";
+  const [tab, setTab] = useState<Tab>("tasks");
   const tasks = project.tasks;
+  const updates = getProjectUpdates(project);
+
+  // Group tasks by board column intent
+  const groups: { key: string; label: string; tone: string; items: Task[] }[] = [
+    { key: "active", label: "In Progress / Sprint", tone: "text-primary", items: [] },
+    { key: "blocked", label: "Blocked", tone: "text-status-critical", items: [] },
+    { key: "backlog", label: "Backlog", tone: "text-on-surface-variant", items: [] },
+    { key: "done", label: "Done", tone: "text-status-low", items: [] },
+  ];
+  for (const t of tasks) {
+    if (t.status === "Completed") groups[3].items.push(t);
+    else if (t.status === "Blocked" || t.status === "Delayed") groups[1].items.push(t);
+    else if (t.inSprint || t.status === "In Progress") groups[0].items.push(t);
+    else groups[2].items.push(t);
+  }
+
+  const tabs: { k: Tab; label: string; count: number; icon: string }[] = [
+    { k: "tasks", label: "Tasks", count: tasks.length, icon: "checklist" },
+    { k: "updates", label: "Updates", count: updates.length, icon: "forum" },
+    { k: "blockers", label: "Blockers", count: project.blockers.length, icon: "report" },
+  ];
+
   return (
     <div className="rounded-lg border border-border-subtle bg-surface-card overflow-hidden">
-      <div className="flex items-center justify-between px-3 py-2 bg-surface-container-low border-b border-border-subtle">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-on-surface-variant">
-          Tasks · {tasks.length}
-        </p>
-        {isAdmin && (
+      <div className="flex items-center justify-between px-3 py-2 bg-surface-container-low border-b border-border-subtle gap-2">
+        <div className="flex items-center gap-1">
+          {tabs.map((t) => (
+            <button
+              key={t.k}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setTab(t.k);
+              }}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors ${
+                tab === t.k
+                  ? "bg-surface-card text-primary border border-border-subtle shadow-sm"
+                  : "text-on-surface-variant hover:bg-surface-container"
+              }`}
+            >
+              <span className="material-symbols-outlined !text-[14px]">{t.icon}</span>
+              {t.label}
+              <span className={`tabular-nums text-[10px] px-1 rounded ${tab === t.k ? "bg-primary/10 text-primary" : "bg-surface-container text-on-surface-variant"}`}>
+                {t.count}
+              </span>
+            </button>
+          ))}
+        </div>
+        {tab === "tasks" && isAdmin && (
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -665,53 +712,147 @@ function TaskDrilldown({
           </button>
         )}
       </div>
-      {tasks.length === 0 ? (
-        <p className="text-xs text-on-surface-variant px-3 py-4">No tasks yet.</p>
-      ) : (
-        <div className="divide-y divide-border-subtle">
-          {tasks.map((t) => (
-            <div
-              key={t.id}
-              className="flex items-center gap-3 px-3 py-2 hover:bg-surface-container-lowest cursor-pointer"
-              onClick={() => onEditTask(project, t)}
-            >
-              <span className="font-mono text-[10px] text-on-surface-variant w-20 shrink-0 truncate">
-                {t.id}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-on-surface truncate">{t.name}</p>
-                {!compact && (
-                  <p className="text-[10px] text-on-surface-variant truncate">
-                    {t.latestUpdate?.text}
-                  </p>
-                )}
-              </div>
-              <StatusPill s={t.status} />
-              {!compact && (
-                <div className="flex items-center gap-1 w-28 shrink-0">
-                  <Avatar person={t.currentlyWith} size={18} />
-                  <span className="text-[10px] text-on-surface-variant truncate">
-                    {t.currentlyWith.name}
-                  </span>
+
+      {tab === "tasks" && (
+        tasks.length === 0 ? (
+          <p className="text-xs text-on-surface-variant px-3 py-4">No tasks yet.</p>
+        ) : (
+          <div className="divide-y divide-border-subtle">
+            {groups.filter((g) => g.items.length > 0).map((g) => (
+              <div key={g.key}>
+                <div className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wide bg-surface-container-lowest ${g.tone}`}>
+                  {g.label} · {g.items.length}
                 </div>
-              )}
-              {isAdmin && (
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onEditTask(project, t);
-                  }}
-                  title="Edit task"
-                  className="text-primary hover:bg-primary/10 rounded p-1"
-                >
-                  <span className="material-symbols-outlined !text-[16px]">edit</span>
-                </button>
-              )}
-            </div>
-          ))}
+                {g.items.map((t) => (
+                  <DrilldownTaskRow
+                    key={t.id}
+                    project={project}
+                    task={t}
+                    isAdmin={isAdmin}
+                    compact={compact}
+                    onEditTask={onEditTask}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        )
+      )}
+
+      {tab === "updates" && (
+        <div className="p-3 space-y-3">
+          {isAdmin && (
+            <QuickUpdate
+              placeholder={`Post an update to ${project.name}…`}
+              allowBlockerToggle
+              onPost={(text, asBlocker) => {
+                if (asBlocker) {
+                  addBlocker(project.id, text);
+                  toast.success("Blocker added");
+                } else {
+                  appendProjectUpdate(project.id, text);
+                  toast.success("Update posted");
+                }
+              }}
+              compact
+            />
+          )}
+          <UpdateTimeline entries={updates} />
         </div>
       )}
+
+      {tab === "blockers" && (
+        <div className="p-3 space-y-2">
+          {project.blockers.length === 0 ? (
+            <p className="text-xs italic text-on-surface-variant py-2">No active blockers.</p>
+          ) : (
+            project.blockers.map((b) => (
+              <div
+                key={b.title}
+                className="p-2.5 bg-status-critical/5 border border-status-critical/20 rounded-lg flex items-start gap-2"
+              >
+                <span className="material-symbols-outlined !text-[16px] text-status-critical mt-0.5">warning</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-on-surface">{b.title}</p>
+                  {b.detail && <p className="text-[11px] text-on-surface-variant">{b.detail}</p>}
+                  <p className="text-[10px] font-mono text-on-surface-variant mt-0.5">{b.ago}</p>
+                </div>
+              </div>
+            ))
+          )}
+          {isAdmin && (
+            <QuickUpdate
+              placeholder="Describe a new blocker…"
+              onPost={(text) => {
+                addBlocker(project.id, text);
+                toast.success("Blocker added");
+              }}
+              compact
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DrilldownTaskRow({
+  project,
+  task,
+  isAdmin,
+  compact,
+  onEditTask,
+}: {
+  project: Project;
+  task: Task;
+  isAdmin: boolean;
+  compact: boolean;
+  onEditTask: (project: Project, task: Task) => void;
+}) {
+  const priorityDot: Record<NonNullable<Task["priority"]>, string> = {
+    Critical: "bg-status-critical",
+    High: "bg-status-high",
+    Medium: "bg-status-medium",
+    Low: "bg-status-low",
+  };
+  return (
+    <div
+      className="flex items-center gap-3 px-3 py-2 hover:bg-surface-container-lowest cursor-pointer"
+      onClick={() => onEditTask(project, task)}
+    >
+      <span
+        title={task.priority ?? "Medium"}
+        className={`w-2 h-2 rounded-full shrink-0 ${priorityDot[task.priority ?? "Medium"]}`}
+      />
+      <span className="font-mono text-[10px] text-on-surface-variant w-20 shrink-0 truncate">
+        {task.id}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium text-on-surface truncate">{task.name}</p>
+        {!compact && (
+          <p className="text-[10px] text-on-surface-variant truncate">
+            {task.latestUpdate?.text}
+            <span className="ml-1 font-mono">· {relativeTime(task.latestUpdate.at)}</span>
+          </p>
+        )}
+      </div>
+      <StatusPill s={task.status} />
+      {!compact && (
+        <div className="flex items-center gap-1 w-28 shrink-0">
+          <Avatar person={task.currentlyWith} size={18} />
+          <span className="text-[10px] text-on-surface-variant truncate">
+            {task.currentlyWith.name}
+          </span>
+        </div>
+      )}
+      <span
+        title="Open task"
+        className="text-primary hover:bg-primary/10 rounded p-1"
+      >
+        <span className="material-symbols-outlined !text-[16px]">
+          {isAdmin ? "edit" : "open_in_new"}
+        </span>
+      </span>
     </div>
   );
 }
