@@ -9,7 +9,6 @@ const navItems = [
   { to: "/roadmap", icon: "map", label: "Roadmap" },
   { to: "/unified-roadmap", icon: "timeline", label: "Unified Roadmap" },
   { to: "/newsletter", icon: "campaign", label: "Newsletter" },
-  { to: "/import", icon: "upload_file", label: "Import Data" },
 ] as const;
 
 const utilityItems = [
@@ -26,46 +25,46 @@ function Sidebar({ pathname }: { pathname: string }) {
   const isActive = (to: string) =>
     to === "/" ? pathname === "/" : pathname === to || pathname.startsWith(to + "/");
   return (
-    <aside className="hidden md:flex flex-col h-full py-6 px-4 gap-2 bg-surface-container-low border-r border-border-subtle w-64 shrink-0">
-      <Link to="/" className="flex items-center gap-3 px-2 mb-8">
+    <aside className="hidden md:flex flex-col h-full py-5 px-3 gap-1.5 bg-surface-container-low border-r border-border-subtle w-60 shrink-0">
+      <Link to="/" className="flex items-center gap-2.5 px-2 mb-6">
         <div className="w-10 h-10 bg-primary flex items-center justify-center rounded-lg shadow-lg">
           <span className="material-symbols-outlined text-white" style={{ fontVariationSettings: "'FILL' 1" }}>
             insights
           </span>
         </div>
         <div>
-          <h1 className="text-lg font-black text-primary leading-tight">Supply Chain Tech Hub</h1>
-          <p className="text-[10px] uppercase tracking-widest text-on-surface-variant">Projects · Tasks · Enhancements</p>
+          <h1 className="text-[15px] font-bold text-primary leading-tight tracking-tight">Supply Chain Tech Hub</h1>
+          <p className="text-[10px] uppercase tracking-widest text-on-surface-variant mt-0.5">Projects · Tasks · Enhancements</p>
         </div>
       </Link>
-      <nav className="flex-1 space-y-1">
+      <nav className="flex-1 space-y-0.5">
         {navItems.map((item) => {
           const active = isActive(item.to);
           return (
             <Link
               key={item.to}
               to={item.to}
-              className={`flex items-center gap-3 rounded-lg px-4 py-3 transition-all ${
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all ${
                 active
                   ? "bg-primary-fixed text-on-primary-fixed font-bold translate-x-1"
                   : "text-on-surface-variant hover:bg-surface-container-high"
               }`}
             >
               <Icon name={item.icon} />
-              <span className="text-sm">{item.label}</span>
+              <span className="text-[13px]">{item.label}</span>
             </Link>
           );
         })}
       </nav>
-      <div className="mt-auto pt-6 border-t border-border-subtle space-y-1">
+      <div className="mt-auto pt-4 border-t border-border-subtle space-y-0.5">
         {utilityItems.map((item) => (
           <Link
             key={item.to}
             to={item.to}
-            className="flex items-center gap-3 text-on-surface-variant px-4 py-2 hover:bg-surface-container-high transition-all rounded-lg"
+            className="flex items-center gap-3 text-on-surface-variant px-3 py-2 hover:bg-surface-container-high transition-all rounded-lg"
           >
             <Icon name={item.icon} />
-            <span className="text-sm">{item.label}</span>
+            <span className="text-[13px]">{item.label}</span>
           </Link>
         ))}
       </div>
@@ -79,7 +78,7 @@ function TopBar() {
     document.documentElement.classList.toggle("dark", dark);
   }, [dark]);
   return (
-    <header className="flex justify-between items-center w-full px-6 py-3 h-16 bg-surface-container-lowest border-b border-border-subtle sticky top-0 z-20">
+    <header className="flex justify-between items-center w-full px-5 py-2 h-14 bg-surface-container-lowest border-b border-border-subtle sticky top-0 z-20">
       <div className="flex items-center gap-6 flex-1">
         <div className="relative w-full max-w-md">
           <Icon
