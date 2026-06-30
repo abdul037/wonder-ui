@@ -337,47 +337,46 @@ function Dashboard() {
           />
         </section>
 
-        {/* Portfolio health + Priority mix */}
+        {/* Portfolio health + Workstream status breakdown */}
         <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-surface-card border border-border-subtle rounded-xl p-6 shadow-sm">
             <div className="mb-4">
               <h3 className="text-lg font-bold text-on-surface">Portfolio Health</h3>
               <p className="text-xs text-on-surface-variant">Project status distribution · {metrics.total} projects in scope</p>
             </div>
-            <StatusBar counts={metrics.statusCounts} total={metrics.total} />
+            <StatusPills counts={metrics.statusCounts} />
 
             <div className="mt-6 pt-6 border-t border-border-subtle">
               <div className="flex items-center justify-between mb-4">
                 <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">
-                  Workstream Performance
+                  Workstream Status Breakdown
                 </p>
-                <p className="text-[10px] text-on-surface-variant">projects · actions · blockers</p>
+                <p className="text-[10px] text-on-surface-variant">counts per status</p>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {metrics.byWorkstream.map((w) => (
-                  <div key={w.ws} className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-2">
+                  <div
+                    key={w.ws}
+                    className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg bg-surface-container-lowest border border-border-subtle"
+                  >
+                    <div className="flex items-center gap-2 shrink-0 sm:w-44">
                       <span
                         className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-workstream-${w.ws.toLowerCase()}/10 text-workstream-${w.ws.toLowerCase()}`}
                       >
                         {w.ws}
                       </span>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-on-surface truncate">{workstreamFullName[w.ws]}</p>
-                        <p className="text-[10px] text-on-surface-variant">
-                          {w.projects} projects · {w.actions} actions
-                        </p>
-                      </div>
+                      <p className="text-xs font-bold text-on-surface truncate">{workstreamFullName[w.ws]}</p>
                     </div>
-                    {w.blockers > 0 ? (
-                      <span className="px-2 py-0.5 rounded-full bg-status-critical/10 text-status-critical text-[10px] font-bold whitespace-nowrap">
-                        {w.blockers} blocked
-                      </span>
-                    ) : (
-                      <span className="px-2 py-0.5 rounded-full bg-status-low/10 text-status-low text-[10px] font-bold whitespace-nowrap">
-                        clear
-                      </span>
-                    )}
+                    <div className="flex flex-wrap gap-2 flex-1">
+                      {statusOrder.map((s) => {
+                        const count = w.statusCounts[s];
+                        if (!count) return null;
+                        return <StatusMini key={s} status={s} count={count} />;
+                      })}
+                      {w.blockers === 0 && w.projects === 0 && (
+                        <span className="text-[10px] text-on-surface-variant">No projects in this scope</span>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
