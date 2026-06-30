@@ -1,14 +1,23 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { projects, statusStyle, priorityStyle, type Workstream } from "@/data/projects";
+import {
+  projects,
+  statusStyle,
+  type Person,
+  type Project,
+  type Status,
+  type Task,
+  type Workstream,
+} from "@/data/projects";
+import { relativeTime } from "@/lib/time";
 
 export const Route = createFileRoute("/portfolio")({
   head: () => ({
     meta: [
-      { title: "Project Log | Supply Chain Tech Hub" },
+      { title: "Projects & Tasks | Supply Chain Tech Hub" },
       { name: "description", content: "Cross-functional workstream oversight: status, blockers, stakeholders, and delivery milestones." },
-      { property: "og:title", content: "Project Log | Supply Chain Tech Hub" },
+      { property: "og:title", content: "Projects & Tasks | Supply Chain Tech Hub" },
       { property: "og:description", content: "Cross-functional workstream oversight with status, blockers and stakeholders." },
     ],
   }),
@@ -21,203 +30,422 @@ function PortfolioRoute() {
   return <PortfolioIndex />;
 }
 
+const WORKSTREAMS = ["OX", "EX", "AU", "DW"] as const;
+const STATUSES: (Status | "ALL")[] = ["ALL", "On Track", "In Progress", "Blocked", "Delayed", "Completed"];
+
+type Scope = "projects" | "tasks";
+type View = "list" | "grid";
+
+interface TaskRow {
+  project: Project;
+  task: Task;
+}
+
+function Avatar({ person, size = 24 }: { person: Person; size?: number }) {
+  return (
+    <div
+      title={person.name}
+      className="inline-flex items-center justify-center rounded-full bg-primary-fixed text-on-primary-fixed font-bold text-[10px] border border-border-subtle"
+      style={{ width: size, height: size }}
+    >
+      {person.initials}
+    </div>
+  );
+}
+
+function WorkstreamChip({ ws }: { ws: Workstream }) {
+  const k = ws.toLowerCase();
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md bg-workstream-${k}/10 text-workstream-${k} font-mono text-xs`}>
+      {ws}
+    </span>
+  );
+}
+
+function StatusPill({ s }: { s: Status }) {
+  const st = statusStyle[s];
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${st.bg} ${st.text}`}>
+      {s}
+    </span>
+  );
+}
+
+function SprintPill({ task }: { task: Task }) {
+  if (!task.inSprint) {
+    return <span className="text-[10px] uppercase tracking-wide text-on-surface-variant">Backlog</span>;
+  }
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-[10px] font-bold uppercase">
+      <span className="material-symbols-outlined text-[12px]">flag</span>
+      {task.sprint ?? "In Sprint"}
+    </span>
+  );
+}
+
 function PortfolioIndex() {
-  const [filter, setFilter] = useState<Workstream | "ALL">("ALL");
-  const rows = filter === "ALL" ? projects : projects.filter((p) => p.workstream === filter);
-  const blockers = projects.filter((p) => p.blockers.length > 0);
+  const [view, setView] = useState<View>("list");
+  const [scope, setScope] = useState<Scope>("projects");
+  const [wsFilter, setWsFilter] = useState<Workstream | "ALL">("ALL");
+  const [statusFilter, setStatusFilter] = useState<Status | "ALL">("ALL");
+  const [sprintFilter, setSprintFilter] = useState<string>("ALL");
+  const [query, setQuery] = useState("");
+
+  const sprints = useMemo(() => {
+    const s = new Set<string>();
+    projects.forEach((p) => p.tasks.forEach((t) => t.sprint && s.add(t.sprint)));
+    return ["ALL", ...Array.from(s).sort()];
+  }, []);
+
+  const filteredProjects = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return projects.filter((p) => {
+      if (wsFilter !== "ALL" && p.workstream !== wsFilter) return false;
+      if (statusFilter !== "ALL" && p.status !== statusFilter) return false;
+      if (sprintFilter !== "ALL" && !p.tasks.some((t) => t.sprint === sprintFilter)) return false;
+      if (!q) return true;
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.techOwner.name.toLowerCase().includes(q) ||
+        p.businessOwner.name.toLowerCase().includes(q) ||
+        p.tasks.some((t) => t.name.toLowerCase().includes(q) || t.id.toLowerCase().includes(q))
+      );
+    });
+  }, [wsFilter, statusFilter, sprintFilter, query]);
+
+  const filteredTasks: TaskRow[] = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const rows: TaskRow[] = [];
+    projects.forEach((p) => {
+      if (wsFilter !== "ALL" && p.workstream !== wsFilter) return;
+      p.tasks.forEach((task) => {
+        if (statusFilter !== "ALL" && task.status !== statusFilter) return;
+        if (sprintFilter !== "ALL" && task.sprint !== sprintFilter) return;
+        if (q) {
+          const hay = `${p.name} ${task.name} ${task.id} ${task.techOwner.name} ${task.businessOwner.name} ${task.currentlyWith.name}`.toLowerCase();
+          if (!hay.includes(q)) return;
+        }
+        rows.push({ project: p, task });
+      });
+    });
+    return rows;
+  }, [wsFilter, statusFilter, sprintFilter, query]);
 
   return (
     <AppShell>
       <div className="p-6 space-y-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
-            <div>
-              <h2 className="text-4xl font-black text-primary">Project Log</h2>
-              <p className="text-sm text-on-surface-variant mt-1">
-                Real-time oversight of cross-functional workstreams and delivery milestones.
-              </p>
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h2 className="text-4xl font-black text-primary">Projects &amp; Tasks</h2>
+            <p className="text-sm text-on-surface-variant mt-1">
+              Supply chain enhancements across workstreams — owners, sprint status, and live updates.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-surface-container p-1 rounded-lg">
+              {(["projects", "tasks"] as Scope[]).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setScope(s)}
+                  className={`px-3 py-1.5 rounded text-xs font-medium capitalize transition-colors ${
+                    scope === s ? "bg-surface-card shadow-sm text-primary" : "text-on-surface-variant hover:bg-surface-container-high"
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
             </div>
-            <div className="flex gap-2">
-              <button className="flex items-center gap-2 px-4 py-2 bg-surface-card border border-border-subtle rounded-lg text-sm hover:shadow-sm transition-all">
-                <span className="material-symbols-outlined text-[18px]">filter_list</span>
-                Filters
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-surface-card border border-border-subtle rounded-lg text-sm hover:shadow-sm transition-all">
-                <span className="material-symbols-outlined text-[18px]">file_download</span>
-                Export to CSV
-              </button>
+            <div className="flex items-center gap-1 bg-surface-container p-1 rounded-lg">
+              {(["list", "grid"] as View[]).map((v) => (
+                <button
+                  key={v}
+                  onClick={() => setView(v)}
+                  aria-label={`${v} view`}
+                  className={`p-1.5 rounded transition-colors ${
+                    view === v ? "bg-surface-card shadow-sm text-primary" : "text-on-surface-variant hover:bg-surface-container-high"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">{v === "list" ? "view_list" : "grid_view"}</span>
+                </button>
+              ))}
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-xs font-medium text-on-surface-variant mr-2">Workstreams:</span>
-            {(["ALL", "OX", "AU", "EX", "DW"] as const).map((w) => {
-              const active = filter === w;
+        </header>
+
+        <div className="bg-surface-card border border-border-subtle rounded-xl p-4 flex flex-wrap gap-3 items-center">
+          <div className="relative flex-1 min-w-[220px]">
+            <span className="material-symbols-outlined !absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[18px] pointer-events-none">search</span>
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search project, task, ID or owner…"
+              className="w-full bg-surface-container-low border border-border-subtle rounded-lg pl-9 pr-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div className="flex flex-wrap gap-1.5 items-center">
+            {(["ALL", ...WORKSTREAMS] as const).map((w) => {
+              const active = wsFilter === w;
+              const k = w === "ALL" ? "primary" : `workstream-${w.toLowerCase()}`;
               return (
                 <button
                   key={w}
-                  onClick={() => setFilter(w)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                    active
-                      ? "bg-primary text-white shadow-sm"
-                      : "bg-surface-card border border-border-subtle text-on-surface-variant hover:bg-surface-container-low"
+                  onClick={() => setWsFilter(w)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    active ? `bg-${k} text-white shadow-sm` : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
                   }`}
                 >
-                  {w === "ALL" ? "All Streams" : w}
+                  {w === "ALL" ? "All" : w}
                 </button>
               );
             })}
           </div>
-        </div>
-
-        <div className="bg-surface-card rounded-xl border border-border-subtle overflow-hidden shadow-sm">
-          <div className="overflow-x-auto custom-scrollbar">
-            <table className="w-full text-left text-sm min-w-[1100px]">
-              <thead>
-                <tr className="bg-surface-container-low border-b border-border-subtle text-on-surface-variant text-xs">
-                  {["Project", "Task", "Workstream", "Type", "Priority", "E-ID", "Status", "Stakeholders", "Roadblocker", "Stack", "Updated"].map((h) => (
-                    <th key={h} className="px-4 py-3 font-medium whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border-subtle">
-                {rows.map((p) => {
-                  const ws = p.workstream.toLowerCase();
-                  const prio = priorityStyle[p.priority];
-                  const st = statusStyle[p.status];
-                  return (
-                    <tr key={p.id + p.eid} className="hover:bg-surface-container-lowest transition-colors group">
-                      <td className="px-4 py-4">
-                        <Link
-                          to="/portfolio/$projectId"
-                          params={{ projectId: p.id }}
-                          className="font-bold text-on-surface group-hover:text-primary"
-                        >
-                          {p.name}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-4">{p.taskName}</td>
-                      <td className="px-4 py-4">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-md bg-workstream-${ws}/10 text-workstream-${ws} font-mono text-xs`}>
-                          {p.workstream}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4">{p.type}</td>
-                      <td className="px-4 py-4">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${prio.bg} ${prio.text}`}>
-                          {p.priority}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4 font-mono text-xs text-on-surface-variant">{p.eid}</td>
-                      <td className="px-4 py-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${st.bg} ${st.text}`}>
-                          {p.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex -space-x-2">
-                          {p.team.slice(0, 2).map((a, i) => (
-                            <img key={i} src={a} alt="" className="w-6 h-6 rounded-full border-2 border-surface-card ring-1 ring-border-subtle" />
-                          ))}
-                          {p.team.length > 2 && (
-                            <div className="w-6 h-6 rounded-full border-2 border-surface-card bg-surface-container-high flex items-center justify-center text-[10px] font-bold">
-                              +{p.team.length - 2}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4">
-                        {p.blocker ? (
-                          <div className="flex items-center gap-2 text-status-critical">
-                            <span className="material-symbols-outlined text-[16px]">warning</span>
-                            <span className="whitespace-nowrap">{p.blocker}</span>
-                          </div>
-                        ) : (
-                          <span className="text-on-surface-variant opacity-40 italic">No blockers</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-4">
-                        <div className="flex gap-1">
-                          {p.techStack.map((t) => (
-                            <span key={t} className="px-1.5 py-0.5 bg-surface-container text-on-surface-variant rounded text-[10px] uppercase font-bold">
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-4 py-4 font-mono text-xs text-on-surface-variant whitespace-nowrap">{p.updatedAgo}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <div className="px-4 py-3 bg-surface-container-low border-t border-border-subtle flex items-center justify-between text-xs text-on-surface-variant">
-            <span>Showing {rows.length} of 42 active tasks</span>
-            <div className="flex gap-2">
-              <button className="p-1 rounded hover:bg-surface-container">
-                <span className="material-symbols-outlined">chevron_left</span>
-              </button>
-              <button className="p-1 rounded hover:bg-surface-container">
-                <span className="material-symbols-outlined">chevron_right</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-surface-card rounded-xl border-2 border-status-critical/20 overflow-hidden shadow-md">
-          <div className="bg-status-critical/5 px-6 py-4 flex flex-wrap items-center justify-between gap-4 border-b border-status-critical/10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-status-critical/10 rounded-full flex items-center justify-center text-status-critical">
-                <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  emergency_home
-                </span>
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-on-surface">Roadblocker Command Center</h3>
-                <p className="text-sm text-on-surface-variant">
-                  {blockers.length} blockers requiring VP-level intervention.
-                </p>
-              </div>
-            </div>
-            <button className="bg-status-critical text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:brightness-110 transition-all shadow-sm flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">priority_high</span>
-              Escalate to PMO Board
-            </button>
-          </div>
-          <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {blockers.map((p) => (
-              <Link
-                key={p.id}
-                to="/portfolio/$projectId"
-                params={{ projectId: p.id }}
-                className="bg-surface-container-lowest p-4 rounded-lg border border-border-subtle hover:border-status-critical/30 transition-all"
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <span className={`font-mono text-xs px-2 py-1 bg-workstream-${p.workstream.toLowerCase()}/10 text-workstream-${p.workstream.toLowerCase()} rounded`}>
-                    {p.workstream} WORKSTREAM
-                  </span>
-                  <span className="text-status-critical text-xs font-bold flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                      warning
-                    </span>
-                    CRITICAL
-                  </span>
-                </div>
-                <h4 className="font-bold text-on-surface mb-1">{p.name}</h4>
-                <p className="text-sm text-on-surface-variant mb-4">{p.blockers[0]?.detail}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-on-surface-variant">Owner: {p.owner}</span>
-                  <span className="font-mono text-xs text-status-critical bg-status-critical/5 px-2 py-1 rounded">
-                    Day {p.blockers[0]?.ago} of stagnation
-                  </span>
-                </div>
-              </Link>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as Status | "ALL")}
+            className="bg-surface-container-low border border-border-subtle rounded-lg px-3 py-2 text-xs"
+          >
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>{s === "ALL" ? "All statuses" : s}</option>
             ))}
-          </div>
+          </select>
+          <select
+            value={sprintFilter}
+            onChange={(e) => setSprintFilter(e.target.value)}
+            className="bg-surface-container-low border border-border-subtle rounded-lg px-3 py-2 text-xs"
+          >
+            {sprints.map((s) => (
+              <option key={s} value={s}>{s === "ALL" ? "All sprints" : s}</option>
+            ))}
+          </select>
         </div>
+
+        {view === "list" ? (
+          scope === "projects" ? (
+            <ProjectsTable rows={filteredProjects} />
+          ) : (
+            <TasksTable rows={filteredTasks} />
+          )
+        ) : scope === "projects" ? (
+          <ProjectsGrid rows={filteredProjects} />
+        ) : (
+          <TasksGrid rows={filteredTasks} />
+        )}
       </div>
     </AppShell>
+  );
+}
+
+function ProjectsTable({ rows }: { rows: Project[] }) {
+  return (
+    <div className="bg-surface-card rounded-xl border border-border-subtle overflow-hidden shadow-sm">
+      <div className="overflow-x-auto custom-scrollbar">
+        <table className="w-full text-left text-sm min-w-[1400px]">
+          <thead>
+            <tr className="bg-surface-container-low border-b border-border-subtle text-on-surface-variant text-xs">
+              {[
+                "Project", "Lead Task", "Task ID", "Type", "Sprint", "Status",
+                "Currently With", "Tech Owner", "Business Owner", "Log", "Latest Update", "Workstream",
+              ].map((h) => (
+                <th key={h} className="px-4 py-3 font-medium whitespace-nowrap">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border-subtle">
+            {rows.map((p) => {
+              const lead = p.tasks[0];
+              return (
+                <tr key={p.id} className="hover:bg-surface-container-lowest transition-colors group card-hover-effect">
+                  <td className="px-4 py-4">
+                    <Link to="/portfolio/$projectId" params={{ projectId: p.id }} className="font-bold text-on-surface group-hover:text-primary">
+                      {p.name}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-4">{lead?.name ?? "—"}</td>
+                  <td className="px-4 py-4 font-mono text-xs text-on-surface-variant">{lead?.id ?? p.eid}</td>
+                  <td className="px-4 py-4 text-xs">{lead?.type ?? p.type}</td>
+                  <td className="px-4 py-4">{lead ? <SprintPill task={lead} /> : "—"}</td>
+                  <td className="px-4 py-4"><StatusPill s={p.status} /></td>
+                  <td className="px-4 py-4"><div className="flex items-center gap-2"><Avatar person={p.currentlyWith} /><span className="text-xs">{p.currentlyWith.name}</span></div></td>
+                  <td className="px-4 py-4"><div className="flex items-center gap-2"><Avatar person={p.techOwner} /><span className="text-xs">{p.techOwner.name}</span></div></td>
+                  <td className="px-4 py-4"><div className="flex items-center gap-2"><Avatar person={p.businessOwner} /><span className="text-xs">{p.businessOwner.name}</span></div></td>
+                  <td className="px-4 py-4">
+                    <Link to="/portfolio/$projectId" params={{ projectId: p.id }} className="inline-flex items-center gap-1 text-primary text-xs font-medium hover:underline">
+                      <span className="material-symbols-outlined text-[16px]">history_edu</span>
+                      {p.enhancementLog.length}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-4 max-w-[260px]">
+                    <p className="text-xs text-on-surface truncate" title={p.latestUpdate.text}>{p.latestUpdate.text}</p>
+                    <p className="text-[10px] font-mono text-on-surface-variant mt-0.5">{relativeTime(p.latestUpdate.at)}</p>
+                  </td>
+                  <td className="px-4 py-4"><WorkstreamChip ws={p.workstream} /></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div className="px-4 py-3 bg-surface-container-low border-t border-border-subtle text-xs text-on-surface-variant">
+        Showing {rows.length} of {projects.length} projects
+      </div>
+    </div>
+  );
+}
+
+function TasksTable({ rows }: { rows: TaskRow[] }) {
+  return (
+    <div className="bg-surface-card rounded-xl border border-border-subtle overflow-hidden shadow-sm">
+      <div className="overflow-x-auto custom-scrollbar">
+        <table className="w-full text-left text-sm min-w-[1400px]">
+          <thead>
+            <tr className="bg-surface-container-low border-b border-border-subtle text-on-surface-variant text-xs">
+              {[
+                "Project", "Task", "Task ID", "Type", "Sprint", "Status",
+                "Currently With", "Tech Owner", "Business Owner", "Latest Update", "Workstream",
+              ].map((h) => (
+                <th key={h} className="px-4 py-3 font-medium whitespace-nowrap">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border-subtle">
+            {rows.map(({ project, task }) => (
+              <tr key={task.id} className="hover:bg-surface-container-lowest transition-colors group">
+                <td className="px-4 py-4">
+                  <Link to="/portfolio/$projectId" params={{ projectId: project.id }} className="text-xs text-on-surface-variant hover:text-primary">
+                    {project.name}
+                  </Link>
+                </td>
+                <td className="px-4 py-4 font-medium text-on-surface">{task.name}</td>
+                <td className="px-4 py-4 font-mono text-xs text-on-surface-variant">{task.id}</td>
+                <td className="px-4 py-4 text-xs">{task.type}</td>
+                <td className="px-4 py-4"><SprintPill task={task} /></td>
+                <td className="px-4 py-4"><StatusPill s={task.status} /></td>
+                <td className="px-4 py-4"><div className="flex items-center gap-2"><Avatar person={task.currentlyWith} /><span className="text-xs">{task.currentlyWith.name}</span></div></td>
+                <td className="px-4 py-4"><div className="flex items-center gap-2"><Avatar person={task.techOwner} /><span className="text-xs">{task.techOwner.name}</span></div></td>
+                <td className="px-4 py-4"><div className="flex items-center gap-2"><Avatar person={task.businessOwner} /><span className="text-xs">{task.businessOwner.name}</span></div></td>
+                <td className="px-4 py-4 max-w-[260px]">
+                  <p className="text-xs text-on-surface truncate" title={task.latestUpdate.text}>{task.latestUpdate.text}</p>
+                  <p className="text-[10px] font-mono text-on-surface-variant mt-0.5">{relativeTime(task.latestUpdate.at)}</p>
+                </td>
+                <td className="px-4 py-4"><WorkstreamChip ws={project.workstream} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="px-4 py-3 bg-surface-container-low border-t border-border-subtle text-xs text-on-surface-variant">
+        Showing {rows.length} tasks
+      </div>
+    </div>
+  );
+}
+
+function ProjectsGrid({ rows }: { rows: Project[] }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {rows.map((p) => {
+        const lead = p.tasks[0];
+        return (
+          <Link
+            key={p.id}
+            to="/portfolio/$projectId"
+            params={{ projectId: p.id }}
+            className={`group bg-surface-card border border-border-subtle rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border-l-4 border-l-workstream-${p.workstream.toLowerCase()} card-hover-effect`}
+          >
+            <div className="p-5 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="text-[10px] font-mono text-on-surface-variant">{lead?.id ?? p.eid}</p>
+                  <h3 className="font-bold text-on-surface group-hover:text-primary">{p.name}</h3>
+                  <p className="text-xs text-on-surface-variant mt-0.5">{lead?.name}</p>
+                </div>
+                <WorkstreamChip ws={p.workstream} />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <StatusPill s={p.status} />
+                {lead && <SprintPill task={lead} />}
+                <span className="text-[10px] uppercase tracking-wide bg-surface-container-low text-on-surface-variant px-2 py-0.5 rounded">{lead?.type ?? p.type}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border-subtle">
+                <OwnerCell label="Now with" person={p.currentlyWith} />
+                <OwnerCell label="Tech" person={p.techOwner} />
+                <OwnerCell label="Business" person={p.businessOwner} />
+              </div>
+              <div className="bg-surface-container-low rounded-lg p-3">
+                <div className="flex items-center gap-1 text-on-surface-variant text-[10px] mb-1">
+                  <span className="material-symbols-outlined text-[12px]">schedule</span>
+                  {relativeTime(p.latestUpdate.at)}
+                </div>
+                <p className="text-xs text-on-surface line-clamp-2">{p.latestUpdate.text}</p>
+              </div>
+            </div>
+            <div className="px-5 py-3 bg-surface-container-lowest border-t border-border-subtle flex items-center justify-between text-xs">
+              <span className="text-on-surface-variant inline-flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">history_edu</span>
+                {p.enhancementLog.length} log entries
+              </span>
+              <span className="text-primary font-medium inline-flex items-center gap-1">
+                View details
+                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+              </span>
+            </div>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}
+
+function TasksGrid({ rows }: { rows: TaskRow[] }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {rows.map(({ project, task }) => (
+        <Link
+          key={task.id}
+          to="/portfolio/$projectId"
+          params={{ projectId: project.id }}
+          className={`group bg-surface-card border border-border-subtle rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border-l-4 border-l-workstream-${project.workstream.toLowerCase()} card-hover-effect`}
+        >
+          <div className="p-5 space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="text-[10px] font-mono text-on-surface-variant">{task.id} · {project.name}</p>
+                <h3 className="font-bold text-on-surface group-hover:text-primary">{task.name}</h3>
+              </div>
+              <WorkstreamChip ws={project.workstream} />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <StatusPill s={task.status} />
+              <SprintPill task={task} />
+              <span className="text-[10px] uppercase tracking-wide bg-surface-container-low text-on-surface-variant px-2 py-0.5 rounded">{task.type}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border-subtle">
+              <OwnerCell label="Now with" person={task.currentlyWith} />
+              <OwnerCell label="Tech" person={task.techOwner} />
+              <OwnerCell label="Business" person={task.businessOwner} />
+            </div>
+            <div className="bg-surface-container-low rounded-lg p-3">
+              <div className="flex items-center gap-1 text-on-surface-variant text-[10px] mb-1">
+                <span className="material-symbols-outlined text-[12px]">schedule</span>
+                {relativeTime(task.latestUpdate.at)}
+              </div>
+              <p className="text-xs text-on-surface line-clamp-2">{task.latestUpdate.text}</p>
+            </div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function OwnerCell({ label, person }: { label: string; person: Person }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-[9px] uppercase tracking-wide text-on-surface-variant">{label}</span>
+      <div className="flex items-center gap-1.5">
+        <Avatar person={person} size={20} />
+        <span className="text-[11px] text-on-surface truncate">{person.name}</span>
+      </div>
+    </div>
   );
 }
