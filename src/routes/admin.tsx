@@ -462,6 +462,242 @@ function LogsAdmin({
   );
 }
 
+/* -------------------- Pipeline -------------------- */
+
+function PipelineAdmin({
+  items,
+  onChange,
+  onPromote,
+}: {
+  items: PipelineItem[];
+  onChange: (next: PipelineItem[]) => void;
+  onPromote: (item: PipelineItem) => void;
+}) {
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    workstream: "OX" as Workstream,
+    priority: "Medium" as Priority,
+    effort: "Medium" as PipelineEffort,
+    source: "Business Request" as PipelineSource,
+    stage: "Idea" as PipelineStage,
+    expectedStart: new Date().toISOString().slice(0, 10),
+    businessOwner: "",
+    techOwner: "",
+  });
+
+  const update = (id: string, patch: Partial<PipelineItem>) => {
+    onChange(items.map((i) => (i.id === id ? { ...i, ...patch } : i)));
+    toast.success("Intake updated");
+  };
+
+  const remove = (id: string) => {
+    onChange(items.filter((i) => i.id !== id));
+    toast.success("Intake removed");
+  };
+
+  const create = () => {
+    if (!form.name.trim() || !form.businessOwner.trim() || !form.techOwner.trim()) {
+      toast.error("Name, business owner and tech owner are required");
+      return;
+    }
+    const item: PipelineItem = {
+      id: `PL-${Math.floor(Math.random() * 9000 + 1000)}`,
+      name: form.name,
+      description: form.description || form.name,
+      workstream: form.workstream,
+      priority: form.priority,
+      effort: form.effort,
+      source: form.source,
+      stage: form.stage,
+      expectedStart: form.expectedStart,
+      businessOwner: {
+        name: form.businessOwner,
+        initials: form.businessOwner.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase(),
+      },
+      techOwner: {
+        name: form.techOwner,
+        initials: form.techOwner.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase(),
+      },
+      createdAt: new Date().toISOString().slice(0, 10),
+    };
+    onChange([item, ...items]);
+    setForm({ ...form, name: "", description: "", businessOwner: "", techOwner: "" });
+    toast.success(`${item.id} added to pipeline`);
+  };
+
+  const inputCls =
+    "w-full bg-surface-container-low border border-border-subtle rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none";
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6">
+      <div className="bg-surface-card border border-border-subtle rounded-xl shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-border-subtle">
+          <h2 className="text-lg font-bold">Pipeline Intake ({items.length})</h2>
+          <p className="text-xs text-on-surface-variant">
+            Triage demand — edit stage / priority inline, promote approved items into active projects.
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-[11px] uppercase tracking-widest text-on-surface-variant bg-surface-container-low">
+                <th className="text-left p-3 font-bold">Intake</th>
+                <th className="text-left p-3 font-bold">WS</th>
+                <th className="text-left p-3 font-bold">Stage</th>
+                <th className="text-left p-3 font-bold">Priority</th>
+                <th className="text-left p-3 font-bold">Effort</th>
+                <th className="text-left p-3 font-bold">Expected</th>
+                <th className="text-left p-3 font-bold">Owners</th>
+                <th className="p-3" />
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((i) => (
+                <tr key={i.id} className="border-t border-border-subtle hover:bg-surface-container-low align-top">
+                  <td className="p-3">
+                    <p className="font-bold text-on-surface">{i.name}</p>
+                    <p className="text-[11px] text-on-surface-variant font-mono">{i.id} · {i.source}</p>
+                  </td>
+                  <td className="p-3">
+                    <select
+                      value={i.workstream}
+                      onChange={(e) => update(i.id, { workstream: e.target.value as Workstream })}
+                      className="bg-surface-container-low border border-border-subtle rounded px-2 py-1 text-xs"
+                    >
+                      {workstreams.map((w) => <option key={w}>{w}</option>)}
+                    </select>
+                  </td>
+                  <td className="p-3">
+                    <select
+                      value={i.stage}
+                      onChange={(e) => update(i.id, { stage: e.target.value as PipelineStage })}
+                      className={`border border-border-subtle rounded px-2 py-1 text-xs bg-${pipelineStageColor[i.stage]}/10 text-${pipelineStageColor[i.stage]} font-bold`}
+                    >
+                      {pipelineStages.map((s) => <option key={s}>{s}</option>)}
+                    </select>
+                  </td>
+                  <td className="p-3">
+                    <select
+                      value={i.priority}
+                      onChange={(e) => update(i.id, { priority: e.target.value as Priority })}
+                      className="bg-surface-container-low border border-border-subtle rounded px-2 py-1 text-xs"
+                    >
+                      {priorities.map((p) => <option key={p}>{p}</option>)}
+                    </select>
+                  </td>
+                  <td className="p-3">
+                    <select
+                      value={i.effort}
+                      onChange={(e) => update(i.id, { effort: e.target.value as PipelineEffort })}
+                      className="bg-surface-container-low border border-border-subtle rounded px-2 py-1 text-xs"
+                    >
+                      {pipelineEfforts.map((e) => <option key={e}>{e}</option>)}
+                    </select>
+                  </td>
+                  <td className="p-3">
+                    <input
+                      type="date"
+                      defaultValue={i.expectedStart}
+                      onBlur={(e) => update(i.id, { expectedStart: e.target.value })}
+                      className="bg-surface-container-low border border-border-subtle rounded px-2 py-1 text-xs"
+                    />
+                  </td>
+                  <td className="p-3 text-xs text-on-surface-variant">
+                    <div>B · {i.businessOwner.name}</div>
+                    <div>T · {i.techOwner.name}</div>
+                  </td>
+                  <td className="p-3">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => onPromote(i)}
+                        title="Promote to active project"
+                        className="text-primary hover:bg-primary/10 rounded p-1"
+                      >
+                        <span className="material-symbols-outlined text-base">north_east</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Delete intake ${i.id}?`)) remove(i.id);
+                        }}
+                        className="text-status-critical hover:bg-status-critical/10 rounded p-1"
+                      >
+                        <span className="material-symbols-outlined text-base">delete</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={8} className="px-4 py-6 text-center text-on-surface-variant">
+                    No pipeline items yet — use the form to add one.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <aside className="bg-surface-card border border-border-subtle rounded-xl shadow-sm p-5 space-y-3 h-fit lg:sticky lg:top-20">
+        <h3 className="font-bold">Add Intake</h3>
+        <input
+          placeholder="Name"
+          value={form.name}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          className={inputCls}
+        />
+        <textarea
+          placeholder="Description"
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          className={`${inputCls} min-h-[80px]`}
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <select value={form.workstream} onChange={(e) => setForm({ ...form, workstream: e.target.value as Workstream })} className={inputCls}>
+            {workstreams.map((w) => <option key={w}>{w}</option>)}
+          </select>
+          <select value={form.stage} onChange={(e) => setForm({ ...form, stage: e.target.value as PipelineStage })} className={inputCls}>
+            {pipelineStages.map((s) => <option key={s}>{s}</option>)}
+          </select>
+          <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value as Priority })} className={inputCls}>
+            {priorities.map((p) => <option key={p}>{p}</option>)}
+          </select>
+          <select value={form.effort} onChange={(e) => setForm({ ...form, effort: e.target.value as PipelineEffort })} className={inputCls}>
+            {pipelineEfforts.map((e) => <option key={e}>{e}</option>)}
+          </select>
+          <select value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value as PipelineSource })} className={`${inputCls} col-span-2`}>
+            {pipelineSources.map((s) => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+        <input
+          type="date"
+          value={form.expectedStart}
+          onChange={(e) => setForm({ ...form, expectedStart: e.target.value })}
+          className={inputCls}
+        />
+        <input
+          placeholder="Business owner"
+          value={form.businessOwner}
+          onChange={(e) => setForm({ ...form, businessOwner: e.target.value })}
+          className={inputCls}
+        />
+        <input
+          placeholder="Tech owner"
+          value={form.techOwner}
+          onChange={(e) => setForm({ ...form, techOwner: e.target.value })}
+          className={inputCls}
+        />
+        <button onClick={create} className="w-full bg-primary text-white py-2 rounded-lg text-sm font-bold hover:opacity-90 flex items-center justify-center gap-2">
+          <span className="material-symbols-outlined text-base">add</span>
+          Add to Pipeline
+        </button>
+      </aside>
+    </div>
+  );
+}
+
 /* -------------------- Newsletter -------------------- */
 
 function NewsletterAdmin({
