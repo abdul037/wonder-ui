@@ -155,6 +155,14 @@ function Dashboard() {
       { "On Track": 0, "In Progress": 0, Blocked: 0, Delayed: 0, Completed: 0 }
     );
 
+    const taskStatusCounts = statusOrder.reduce<Record<Status, number>>(
+      (acc, s) => {
+        acc[s] = allTasks.filter((t) => t.status === s).length;
+        return acc;
+      },
+      { "On Track": 0, "In Progress": 0, Blocked: 0, Delayed: 0, Completed: 0 }
+    );
+
     const byWorkstream = (["OX", "EX", "AU", "DW"] as Workstream[]).map((ws) => {
       const ps = projects.filter((p) => p.workstream === ws);
       const tasks = ps.flatMap((p) => p.tasks);
