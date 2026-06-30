@@ -4,9 +4,9 @@ import { AppShell } from "@/components/AppShell";
 export const Route = createFileRoute("/sprint-board")({
   head: () => ({
     meta: [
-      { title: "Sprint Board | PMO Command Center" },
+      { title: "Sprint Board | Supply Chain Tech Hub" },
       { name: "description", content: "Kanban view of Sprint 24 — Core Infrastructure Q3 across backlog, prioritized, in-sprint, in-progress and done." },
-      { property: "og:title", content: "Sprint Board | PMO Command Center" },
+      { property: "og:title", content: "Sprint Board | Supply Chain Tech Hub" },
       { property: "og:description", content: "Kanban view of the active sprint across the engineering workstreams." },
     ],
   }),

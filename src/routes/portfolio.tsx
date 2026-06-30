@@ -6,9 +6,9 @@ import { projects, statusStyle, priorityStyle, type Workstream } from "@/data/pr
 export const Route = createFileRoute("/portfolio")({
   head: () => ({
     meta: [
-      { title: "Project Log | PMO Command Center" },
+      { title: "Project Log | Supply Chain Tech Hub" },
       { name: "description", content: "Cross-functional workstream oversight: status, blockers, stakeholders, and delivery milestones." },
-      { property: "og:title", content: "Project Log | PMO Command Center" },
+      { property: "og:title", content: "Project Log | Supply Chain Tech Hub" },
       { property: "og:description", content: "Cross-functional workstream oversight with status, blockers and stakeholders." },
     ],
   }),

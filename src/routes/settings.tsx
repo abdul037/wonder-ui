@@ -4,8 +4,8 @@ import { AppShell } from "@/components/AppShell";
 export const Route = createFileRoute("/settings")({
   head: () => ({
     meta: [
-      { title: "Settings | PMO Command Center" },
-      { name: "description", content: "Workspace, notification, and integration settings for the PMO Command Center." },
+      { title: "Settings | Supply Chain Tech Hub" },
+      { name: "description", content: "Workspace, notification, and integration settings for the Supply Chain Tech Hub." },
     ],
   }),
   component: SettingsPage,

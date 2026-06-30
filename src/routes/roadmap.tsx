@@ -5,9 +5,9 @@ import { projects, workstreamLabel } from "@/data/projects";
 export const Route = createFileRoute("/roadmap")({
   head: () => ({
     meta: [
-      { title: "Roadmap | PMO Command Center" },
+      { title: "Roadmap | Supply Chain Tech Hub" },
       { name: "description", content: "Multi-quarter roadmap across operational excellence, executive strategy, automation and data warehouse workstreams." },
-      { property: "og:title", content: "Roadmap | PMO Command Center" },
+      { property: "og:title", content: "Roadmap | Supply Chain Tech Hub" },
       { property: "og:description", content: "Multi-quarter strategic roadmap across workstreams." },
     ],
   }),

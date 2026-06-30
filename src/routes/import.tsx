@@ -5,9 +5,9 @@ import { useState } from "react";
 export const Route = createFileRoute("/import")({
   head: () => ({
     meta: [
-      { title: "Import Data | PMO Command Center" },
+      { title: "Import Data | Supply Chain Tech Hub" },
       { name: "description", content: "Bulk-upload portfolio projects, milestones, and workstreams from Excel or CSV." },
-      { property: "og:title", content: "Import Data | PMO Command Center" },
+      { property: "og:title", content: "Import Data | Supply Chain Tech Hub" },
       { property: "og:description", content: "Bulk-import wizard for portfolio projects and milestones." },
     ],
   }),
