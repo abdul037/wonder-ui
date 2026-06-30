@@ -80,7 +80,7 @@ function KpiTile({
       </div>
       <div>
         <p className="text-[11px] font-bold uppercase tracking-widest text-on-surface-variant">{label}</p>
-        <p className={`text-3xl font-black mt-1 ${critical ? "text-status-critical" : "text-on-surface"}`}>{value}</p>
+        <p className={`text-4xl font-black font-mono mt-1 tracking-tight ${critical ? "text-status-critical" : "text-on-surface"}`}>{value}</p>
         {hint && <p className="text-[11px] text-on-surface-variant mt-1">{hint}</p>}
       </div>
     </div>
