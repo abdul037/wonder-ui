@@ -707,7 +707,8 @@ function TaskDrilldown({
           {tasks.map((t) => (
             <div
               key={t.id}
-              className="flex items-center gap-3 px-3 py-2 hover:bg-surface-container-lowest"
+              className="flex items-center gap-3 px-3 py-2 hover:bg-surface-container-lowest cursor-pointer"
+              onClick={() => onEditTask(project, t)}
             >
               <span className="font-mono text-[10px] text-on-surface-variant w-20 shrink-0 truncate">
                 {t.id}

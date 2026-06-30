@@ -238,7 +238,7 @@ export function TaskEditDialog({
               value={draft.sprint ?? ""}
               disabled={!draft.inSprint}
               onChange={(e) => set("sprint", e.target.value)}
-              placeholder="e.g. Sprint 24"
+              placeholder="e.g. Current Sprint"
               className={`${inputCls} ${!draft.inSprint ? "opacity-50" : ""}`}
             />
           </div>
