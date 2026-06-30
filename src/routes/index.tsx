@@ -182,10 +182,6 @@ function Dashboard() {
       };
     });
 
-    const priorityCounts = (["Critical", "High", "Medium", "Low"] as Priority[]).map((p) => ({
-      p,
-      count: scoped.filter((x) => x.priority === p).length,
-    }));
 
     // Owner workload (currently with)
     const ownerMap = new Map<
@@ -220,7 +216,6 @@ function Dashboard() {
       statusCounts,
       taskStatusCounts,
       byWorkstream,
-      priorityCounts,
       owners,
     };
   }, [scoped, allTasks]);
