@@ -22,6 +22,7 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
 
   --color-background: #f8f9fa;
   --color-foreground: #191c1d;
@@ -150,9 +151,36 @@ html.dark {
     font-weight: 600;
     color: var(--color-on-surface-variant);
   }
-  .page-title { font-size: 1.5rem; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; color: var(--color-on-surface); }
-  .section-title { font-size: 0.95rem; line-height: 1.3; font-weight: 600; color: var(--color-on-surface); }
+  .page-title { font-family: var(--font-display); font-size: 1.625rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; color: var(--color-on-surface); }
+  .section-title { font-size: 0.875rem; line-height: 1.3; font-weight: 700; letter-spacing: 0.01em; color: var(--color-on-surface); }
   .card-title { font-size: 0.875rem; line-height: 1.35; font-weight: 600; color: var(--color-on-surface); }
   .card-meta { font-size: 0.75rem; color: var(--color-on-surface-variant); }
-  .kpi-num { font-size: 1.75rem; line-height: 1.1; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .kpi-num { font-family: var(--font-display); font-size: 1.875rem; line-height: 1.05; font-weight: 700; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; }
+
+  /* ── Briefing / slide typography ─────────────────────────────── */
+  .slide-content {
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    position: relative;
+    --slide-title-lg: 104px;
+    --slide-title: 88px;
+    --slide-subtitle: 52px;
+    --slide-body-lg: 40px;
+    --slide-body: 32px;
+    --slide-caption: 24px;
+    --slide-kicker: 22px;
+    --slide-chrome: 20px;
+  }
+  .slide-title-lg { font-family: var(--font-display); font-size: var(--slide-title-lg); line-height: 1.0; letter-spacing: -0.045em; font-weight: 700; }
+  .slide-title    { font-family: var(--font-display); font-size: var(--slide-title);    line-height: 1.05; letter-spacing: -0.035em; font-weight: 700; }
+  .slide-subtitle { font-family: var(--font-display); font-size: var(--slide-subtitle); line-height: 1.15; letter-spacing: -0.02em; font-weight: 500; }
+  .slide-body-lg  { font-size: var(--slide-body-lg);  line-height: 1.22; }
+  .slide-body     { font-size: var(--slide-body);     line-height: 1.28; }
+  .slide-caption  { font-size: var(--slide-caption);  line-height: 1.25; }
+  .slide-kicker   { font-family: var(--font-display); font-size: var(--slide-kicker); line-height: 1.1; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 600; }
+  .slide-chrome, .slide-badge, .slide-footer, .slide-page {
+    font-size: var(--slide-chrome); line-height: 1.15;
+  }
+  .slide-badge, .slide-page { white-space: nowrap; }
 }
